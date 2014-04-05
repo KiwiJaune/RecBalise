@@ -111,17 +111,14 @@
 #define KD	2
 
 
-#define PWMG 	LATBbits.LATB13
-#define DIRG 	LATAbits.LATA10
-#define BRAKEG 	LATBbits.LATB12
-#define PWMD 	LATBbits.LATB15
-#define DIRD 	LATAbits.LATA7
-#define BRAKED 	LATBbits.LATB14
+#define SERVO_ON	LATAbits.LATA8 
+#define LED 		LATCbits.LATC7 
+#define LASER_ON	LATAbits.LATA7 
+#define PWMH		LATBbits.LATB14
+#define	PWML		LATBbits.LATB15
+#define LASER_1 	PORTCbits.RC0
+#define LASER_2 	PORTCbits.RC1
 
-#define SW1 	LATAbits.LATA8
-#define SW2 	LATBbits.LATB4
-#define SW3 	LATAbits.LATA4
-#define SW4 	LATAbits.LATA9
 
 #define INT 	LATAbits.LATA3
 #define STOP			0x01
@@ -157,9 +154,6 @@
 #define ABRUPT			2
 
 #define BALISE 			4
-#define PWMB 	LATCbits.LATC7 	// PW2L1
-#define DIRB 	LATCbits.LATC6 // 
-
 
 
 /*************************************************************************/
@@ -227,8 +221,8 @@ void calcul_angles(void);
 
 void InitCapteurs()
 {
-	TRISCbits.TRISC2 = 1;	// Capteur haut en entrée
-	TRISCbits.TRISC1 = 1;	// Capteur bas en entrée
+	//TRISCbits.TRISC2 = 1;	// Capteur haut en entrée
+	//TRISCbits.TRISC1 = 1;	// Capteur bas en entrée
 	//TRISAbits.TRISA10 = 1;	// Capteur haut en entrée
 	//TRISAbits.TRISA7 = 1;	// Capteur bas en entrée
 }
@@ -279,70 +273,68 @@ int main(void)
 
 	
 	
-	for(wait=0;wait<65000;wait++) // Tempo : 60 nop x 65000 ~100ms min (@40MIPS)
+	/*for(wait=0;wait<65000;wait++) // Tempo : 60 nop x 65000 ~100ms min (@40MIPS)
 	{
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-		Nop();
-	}
+		Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();
+		Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();
+		Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();
+		Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();
+		Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();
+		Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();
+	}*/
 
+	TRISAbits.TRISA0=1; // VADCV1 - Gestion d'alim
+	TRISAbits.TRISA1=1; // VADCV2 - Gestion d'alim
+	TRISAbits.TRISA2=1; // Oscillateur 8MHz - Oscillateur
+//	TRISAbits.TRISA3=0; // SERVO_1 - Servo (contrôle d'assiette)
+//	TRISAbits.TRISA4=0; // CS - Miwi
+	TRISAbits.TRISA7=0; // SHD_+18V - Gestion d'alim
+	TRISAbits.TRISA8=0; // 5V_ON/OFF - Gestion d'alim
+//	TRISAbits.TRISA9=0; // E2 - Gestion d'alim
+//	TRISAbits.TRISA10=0; // KILL - Gestion d'alim
+	TRISBbits.TRISB0=1; // PGD - JTAG & Leds RGB
+	TRISBbits.TRISB1=1; // PGC - JTAG & Leds RGB
+	TRISBbits.TRISB2=1; // ADDR_H - Adressage carte
+	TRISBbits.TRISB3=1; // ADDR_L - Adressage carte
+	TRISBbits.TRISB4=1; // - - -
+	TRISBbits.TRISB5=1; // SDO - Miwi
+	TRISBbits.TRISB6=1; // INT - Miwi
+	TRISBbits.TRISB7=1; // WAKE - Miwi
+	TRISBbits.TRISB8=1; // SCL - I²C
+	TRISBbits.TRISB9=1; // SDA - I²C
+	TRISBbits.TRISB10=1; // TOP_TOUR - Capteur effet hall
+	TRISBbits.TRISB11=1; // SDI1 - Codeur magnétique & Leds RGB
+//	TRISBbits.TRISB12=0; // SCK1 - Codeur magnétique & Leds RGB
+//	TRISBbits.TRISB13=0; // SDO1 - Codeur magnétique & Leds RGB
+	TRISBbits.TRISB14=0; // RIN - Pilotage moteur
+	TRISBbits.TRISB15=0; // FIN - Pilotage moteur
+	TRISCbits.TRISC0=1; // LR61_1 - Detecteur laser
+	TRISCbits.TRISC1=1; // LR61_2 - Detecteur laser
+//	TRISCbits.TRISC2=0; // SERVO_2 - Servo (contrôle d'assiette)
+//	TRISCbits.TRISC3=0; // E1 - Gestion d'alim
+	TRISCbits.TRISC4=1; // SDI - Miwi
+	TRISCbits.TRISC5=1; // SCK - Miwi
+//	TRISCbits.TRISC6=0; // RESET - Miwi
+	TRISCbits.TRISC7=0; // LED - Debug
+	TRISCbits.TRISC8=1; // INT - Miwi
+//	TRISCbits.TRISC9=0; // CS1 - Codeur magnétique
+
+	CNPU2bits.CN16PUE = 1;  // TOP_TOUR - Capteur effet hall
+	// A propos du top tour: cette fois ce n'est pas une bascule : etat bas quand champ magnétique > seuil
+	CNPU1bits.CN6PUE = 1; // ADDR_H - Adressage carte
+	CNPU1bits.CN7PUE = 1; // ADDR_L - Adressage carte
+	CNPU1bits.CN8PUE = 1; // LR61_1 - Detecteur laser
+	CNPU1bits.CN9PUE = 1; // LR61_2 - Detecteur laser
+	
+
+	SERVO_ON = 0;	// 5V OFF
+	LED = 0; 		// LED OFF 
+	LASER_ON = 0;	// LASER_OFF
+	PWMH=0;
+	PWML=0;
+	LED=1;
+	AD1PCFGL = 0x1FC;	// All pins except VADCV1 & VADCV2		
+	
     while(1)
 	{
     /*******************************************************************/
@@ -352,16 +344,11 @@ int main(void)
 	pwm(BALISE,0);
 	BoardInit();      
     ConsoleInit(); 
-    CNPU2bits.CN26PUE = 1; // Pull up sur capteur effet hall
-	InitT2();		// Configuration du timer 2	
-	InitCapteurs();
-	TRISCbits.TRISC7 = 0;
-	TRISCbits.TRISC6 = 0;	
-    //DemoOutput_Greeting();
-
-	RPINR7bits.IC1R = 21; // Capteur effet hall
-	RPINR7bits.IC2R = 17; // Capteur laser BAS
-	RPINR10bits.IC7R = 18; // Capteur laser HAUT
+    InitT2();		// Configuration du timer 2	
+	
+	RPINR7bits.IC1R = 10;  // Capteur effet hall
+	RPINR7bits.IC2R = 16;  // Capteur laser 1 (bas)
+	RPINR10bits.IC7R = 17; // Capteur laser 2 (haut)
 	
 	// Initialize the Input Capture Module
 	IC1CONbits.ICM = 0b00; // Disable Input Capture 1 module
@@ -393,8 +380,11 @@ int main(void)
 	IFS1bits.IC7IF = 0; // Clear IC1 Interrupt Status Flag
 	IEC1bits.IC7IE = 1; // Enable IC1 interrupt
 	
-    LED_1 = 0;
-    LED_2 = 0;
+
+	
+	
+    //LED_1 = 0;
+    //LED_2 = 0;
 
     /*******************************************************************/
     // Initialize Microchip proprietary protocol. Which protocol to use
@@ -450,14 +440,14 @@ int main(void)
     /*******************************************************************/
     if( i != 0xFF )
     {
-		LED_VERTE = LED_ON;
-		LED_ROUGE = LED_OFF;
+		//LED_VERTE = LED_ON;
+		//LED_ROUGE = LED_OFF;
         //DemoOutput_Channel(myChannel, 1);
     }
     else
     {
-		LED_VERTE = LED_OFF;
-		LED_ROUGE = LED_ON;
+		//LED_VERTE = LED_OFF;
+		//LED_ROUGE = LED_ON;
         /*******************************************************************/
         // If no network can be found and join, we need to start a new 
         // network by calling function MiApp_StartConnection
@@ -490,7 +480,7 @@ int main(void)
         /*******************************************************************/
         MiApp_StartConnection(START_CONN_DIRECT, 10, 0);
     }
-
+	
     /*******************************************************************/
     // Function DumpConnection is used to print out the content of the
     //  Connection Entry on the hyperterminal. It may be useful in 
@@ -594,6 +584,8 @@ int main(void)
 				if(rxMessage.Payload[1] == 0x01)
 				{
 					motor_speed = rxMessage.Payload[2] * 256 + rxMessage.Payload[3];
+					if(motor_speed == 0)	LASER_ON = 0;
+					else					LASER_ON = 1;
 					pwm(BALISE, rxMessage.Payload[2] * 256 + rxMessage.Payload[3]);
 					watchdog=0;
 				}
@@ -670,42 +662,18 @@ char pwm(unsigned char motor, float value) // Value = +/- 4000
 
 	switch(motor)
 	{
-		case AVANT:
-		case GAUCHE: if(value > 0)	// Moteur Gauche
-				{
-					DIRG  = 1;		// Position incremente
-					P1DC2 = (unsigned int)(4095 - value);		
-				}
-				else
-				{
-					DIRG  = 0;		// Position decremente
-					P1DC2 = (unsigned int)(4095 + value);		
-				}
-				break;
-		case ARRIERE:
-		case DROITE: if(value > 0)	// Moteur Droit
-				{
-					DIRD  = 1;		// Position incremente
-					P1DC1 = (unsigned int)(4095 - value);		
-				}
-				else
-				{
-					DIRD  = 0;		// Position decremente
-					P1DC1 = (unsigned int)(4095 + value);		
-				}
-				break;
 		case BALISE: 
 		//		if(value >  500) value =  500; // config de test, faible puissance
 		//		if(value < -500) value = -500;
 				if(value > 0)	// Moteur Balise
 				{
-					DIRB  = 1;		// Position incremente
-					P2DC1 = (unsigned int)(4095- value);		
+					//DIRB  = 1;		// Position incremente
+					P1DC1 = (unsigned int)(4095- value);		
 				}
 				else
 				{
-					DIRB  = 0;		// Position decremente
-					P2DC1 = (unsigned int)(4095 + value); // 15/04/2012		
+					//DIRB  = 0;		// Position decremente
+					P1DC1 = (unsigned int)(4095 + value); // 15/04/2012		
 				}
 				break;
 		default : return -1;
@@ -715,11 +683,11 @@ char pwm(unsigned char motor, float value) // Value = +/- 4000
 
 void Initpwm(void)
 {
-	P2TCONbits.PTEN = 1; 		// PWM Time base is On
-	P2TPER = 2000 - 1; 			// 20kHz PWM (2000 counts @40MIPS)
-	PWM2CON1bits.PEN1L = 1;		// PWM1L1 pin is enabled for PWM output 
+	P1TCONbits.PTEN = 1; 		// PWM Time base is On
+	P1TPER = 2000 - 1; 			// 20kHz PWM (2000 counts @40MIPS)
+	PWM1CON1bits.PEN1L = 1;		// PWM1L1 pin is enabled for PWM output 
 
-	P2DC1 = 0xFFFF;
+	P1DC1 = 0xFFFF;
 	// 0xFFFF =   0.00% Power
 }
 
@@ -737,7 +705,7 @@ void __attribute__((__interrupt__)) _IC1Interrupt(void)
 	periode_tour = IC1BUF;
 	
 	IFS0bits.IC1IF=0;
-
+	LASER_ON=1;
 	nombre_angles[IDCAPTEUR_HAUT] = ptr_fronts_haut;
 	nombre_angles[IDCAPTEUR_BAS] = ptr_fronts_bas;
 
