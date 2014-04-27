@@ -80,6 +80,13 @@
 #include "HardwareProfile.h"
 #include "DefineBalise.h"
 
+	_FOSCSEL(FNOSC_PRI);                                    //primary osc
+    _FOSC(OSCIOFNC_ON & POSCMD_EC);                        // EC Osc - PUTAIN D'XT DE MERDE !!!!! 
+    _FWDT(FWDTEN_OFF & WDTPOST_PS2);                         // Disable Watchdog timer
+    _FICD(JTAGEN_OFF & ICS_PGD1);
+    // JTAG should be disabled as well
+
+
 /************************** VARIABLES ************************************/
 #define LIGHT   0x01
 #define SWITCH  0x02
@@ -118,6 +125,12 @@
 #define	PWML		LATBbits.LATB15
 #define LASER_1 	PORTCbits.RC0
 #define LASER_2 	PORTCbits.RC1
+
+#define FALLING_EDGE 		0
+#define RISING_EDGE 		1
+#define SIGNAL_SERVO1 		LATAbits.LATA3
+#define SIGNAL_SERVO2		LATCbits.LATC2
+#define CPT_PERIODE_20MS	6250
 
 
 #define INT 	LATAbits.LATA3
@@ -183,6 +196,9 @@ BYTE myChannel = 24;
 #define  SAMP_BUFF_SIZE	 		8		// Size of the input buffer per analog input
 #define  NUM_CHS2SCAN			8		// Number of channels enabled for channel scan
 
+
+
+unsigned int  Cpt_Tmr_Periode = 0,Periode_Servo1 = 0,Periode_Servo2=0;
 
 unsigned int  BufferA[MAX_CHNUM+1][SAMP_BUFF_SIZE] __attribute__((space(dma),aligned(256)));
 unsigned int  BufferB[MAX_CHNUM+1][SAMP_BUFF_SIZE] __attribute__((space(dma),aligned(256)));
@@ -296,7 +312,7 @@ int main(void)
 	TRISAbits.TRISA0=1; // VADCV1 - Gestion d'alim
 	TRISAbits.TRISA1=1; // VADCV2 - Gestion d'alim
 	TRISAbits.TRISA2=1; // Oscillateur 8MHz - Oscillateur
-//	TRISAbits.TRISA3=0; // SERVO_1 - Servo (contrôle d'assiette)
+	TRISAbits.TRISA3=0; // SERVO_1 - Servo (contrôle d'assiette)
 //	TRISAbits.TRISA4=0; // CS - Miwi
 	TRISAbits.TRISA7=0; // SHD_+18V - Gestion d'alim
 	TRISAbits.TRISA8=0; // 5V_ON/OFF - Gestion d'alim
@@ -320,7 +336,7 @@ int main(void)
 	TRISBbits.TRISB15=0; // FIN - Pilotage moteur
 	TRISCbits.TRISC0=1; // LR61_1 - Detecteur laser
 	TRISCbits.TRISC1=1; // LR61_2 - Detecteur laser
-//	TRISCbits.TRISC2=0; // SERVO_2 - Servo (contrôle d'assiette)
+	TRISCbits.TRISC2=0; // SERVO_2 - Servo (contrôle d'assiette)
 //	TRISCbits.TRISC3=0; // E1 - Gestion d'alim
 	TRISCbits.TRISC4=1; // SDI - Miwi
 	TRISCbits.TRISC5=1; // SCK - Miwi
@@ -328,6 +344,10 @@ int main(void)
 	TRISCbits.TRISC7=0; // LED - Debug
 	TRISCbits.TRISC8=1; // INT - Miwi
 //	TRISCbits.TRISC9=0; // CS1 - Codeur magnétique
+
+	SERVO_ON = 1;
+	LED=1;
+	while(1);
 
 	CNPU2bits.CN16PUE = 1;  // TOP_TOUR - Capteur effet hall
 	// A propos du top tour: cette fois ce n'est pas une bascule : etat bas quand champ magnétique > seuil
@@ -344,7 +364,7 @@ int main(void)
 	PWML=0;
 	LED=1;
 	AD1PCFGL = 0x1FC;	// All pins except VADCV1 & VADCV2		
-	
+
     while(1)
 	{
     /*******************************************************************/
@@ -354,8 +374,7 @@ int main(void)
 	pwm(BALISE,0);
 	BoardInit();      
     ConsoleInit(); 
-    InitT2();		// Configuration du timer 2	
-	
+    
 	RPINR7bits.IC1R = 10;  // Capteur effet hall
 	RPINR7bits.IC2R = 16;  // Capteur laser 1 (bas)
 	RPINR10bits.IC7R = 17; // Capteur laser 2 (haut)
@@ -421,11 +440,11 @@ int main(void)
  	//AD1PCFGH/AD1PCFGL: Port Configuration Register
 	AD1PCFGL=0xFFFF;
 	AD1PCFGLbits.PCFG0 = 0;	// AN0 as Analog Input
-	AD1PCFGLbits.PCFG1 = 0;	// AN1 as Digital Input 
+	AD1PCFGLbits.PCFG1 = 0;	// AN1 as Analog Input
  	AD1PCFGLbits.PCFG2 = 1;	// AN2 as Digital Input
 	AD1PCFGLbits.PCFG3 = 1;	// AN3 as Digital Input 
 	AD1PCFGLbits.PCFG6 = 1;	// AN6 as Digital Input
-	AD1PCFGLbits.PCFG7 = 0;	// AN7 as Digital Input 
+	AD1PCFGLbits.PCFG7 = 0;	// AN7 as Analog Input
 	AD1PCFGLbits.PCFG8 = 1;	// AN8 as Digital Input 
 	
 	IFS0bits.AD1IF   = 0;		// Clear the A/D interrupt flag bit
@@ -447,6 +466,8 @@ int main(void)
 	IEC3bits.DMA5IE = 1; //Set the DMA interrupt enable bit
 	
 	DMA5CONbits.CHEN=1;				// Enable DMA
+
+
 	
     //LED_1 = 0;
     //LED_2 = 0;
@@ -563,16 +584,50 @@ int main(void)
 
 	// Signale sa présence
 	MiApp_FlushTx();
-                
 	MiApp_WriteData(IDBALISE);
-	MiApp_WriteData(0XF0);
-                
-   	MiApp_BroadcastPacket(FALSE);
+	MiApp_WriteData(0XF5);		
+
+	tensionf[0] = ADC_Results[0]*0.322667695;
+	tensionf[1] = ADC_Results[1]*0.322667695;
+
+	tension[0] = (unsigned int)tensionf[0];
+	tension[1] = (unsigned int)tensionf[1];
+		
+	MiApp_WriteData(tension[0]>>8);
+     		MiApp_WriteData(tension[0]&0x00FF);
+     		
+	MiApp_WriteData(tension[1]>>8);
+     		MiApp_WriteData(tension[1]&0x00FF);
+
+	MiApp_BroadcastPacket(FALSE);
 	
 	motor_speed = 0;
+	
+		// Init T2 (servo)
+
+	T2CONbits.TON 	= 0;	//Stops the timer
+	T2CONbits.TSIDL = 0;
+	T2CONbits.TGATE = 0;
+	T2CONbits.TCS	= 0;
+	T2CONbits.T32	= 0;
+	T2CONbits.TCKPS = 0b00;//10; //Prescaler set to 1:64
+	
+	TMR2 = 0; 				//Clear timer register
+	PR2  = 40;				//Full Period = 20.5 µs
+
+	IPC1bits.T2IP = 7; 		//Set Timer2 Interrupt Priority Level
+	IFS0bits.T2IF = 0; 		//Clear Timer2 Interrupt Flag
+	IEC0bits.T2IE = 1; 		//Enable Timer2 interrupt
+	T2CONbits.TON = 1;		//Timer enabled
+
+	
 
     while(watchdog<10)
-    {
+    {	
+
+	
+	
+
 		if(Fin_de_tour == 1)
 		{
 			Fin_de_tour = 0;
@@ -685,7 +740,19 @@ int main(void)
 				   	MiApp_BroadcastPacket(FALSE);
 					
 				}
-
+				else if(rxMessage.Payload[1] == 0x10)
+				{
+					Periode_Servo1 = rxMessage.Payload[2] * 256 + rxMessage.Payload[3];
+					if(Periode_Servo1 == 0) SERVO_ON = 0;
+					else					SERVO_ON = 1;
+				}
+				else if(rxMessage.Payload[1] == 0x11)
+				{
+					Periode_Servo2 = rxMessage.Payload[2] * 256 + rxMessage.Payload[3];
+					if(Periode_Servo2 == 0) SERVO_ON = 0;
+					else					SERVO_ON = 1;
+				}
+				
 				else if(rxMessage.Payload[1] == 0xF0)
 				{
 					testConn  = 1;
@@ -771,10 +838,6 @@ void Initpwm(void)
 	// 0xFFFF =   0.00% Power
 }
 
-void __attribute__ ((interrupt, no_auto_psv)) _T2Interrupt(void) 
-{
-	IFS0bits.T2IF = 0;	
-}
 
 void __attribute__((__interrupt__)) _IC1Interrupt(void)
 {
@@ -878,4 +941,28 @@ void __attribute__((interrupt, no_auto_psv)) _DMA5Interrupt(void)
 	DmaBuffer ^= 1;
 
 	IFS3bits.DMA5IF = 0;		// Clear the DMA0 Interrupt Flag
+}
+
+
+void __attribute__((__interrupt__,__auto_psv__)) _T2Interrupt(void)
+{	
+	IFS0bits.T2IF = 0; 		//Clear Timer1 Interrupt flag
+	
+	Cpt_Tmr_Periode++;
+	
+	if(Cpt_Tmr_Periode == Periode_Servo1)
+	{
+		SIGNAL_SERVO1 = FALLING_EDGE;
+	}
+		
+	if(Cpt_Tmr_Periode == Periode_Servo2)
+	{
+		SIGNAL_SERVO2 = FALLING_EDGE;
+	}
+	if(Cpt_Tmr_Periode == 1500) // 15 ms periode
+	{
+		SIGNAL_SERVO1 = RISING_EDGE;
+		SIGNAL_SERVO2 = RISING_EDGE;
+		Cpt_Tmr_Periode = 0;
+	}		
 }

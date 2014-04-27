@@ -55,12 +55,7 @@
 #include "HardwareProfile.h"
 
 
-    _FOSCSEL(FNOSC_PRI);                                    //primary osc
-    _FOSC(OSCIOFNC_OFF & POSCMD_XT)                         // XT Osc
-    _FWDT(FWDTEN_OFF & WDTPOST_PS2)                         // Disable Watchdog timer
-	_FICD(JTAGEN_OFF & ICS_PGD1)
-    // JTAG should be disabled as well
-
+    
 #define DEBOUNCE_TIME 0x00003FFF
 
 BOOL PUSH_BUTTON_pressed;
