@@ -189,7 +189,7 @@ unsigned int  BufferB[MAX_CHNUM+1][SAMP_BUFF_SIZE] __attribute__((space(dma),ali
 unsigned int ADC_Results[8],DmaBuffer = 0,tension[2];
 float tensionf[2];
 
-unsigned char watchdog;
+unsigned char watchdog=0;
 unsigned char chksum;
 unsigned int periode_tour;
 char Fin_de_tour = 0;
@@ -602,21 +602,6 @@ int main(void)
 			chksum ^= (periode_tour      ) & 0x00FF;
 			
 			
-			tensionf[0] = ADC_Results[0]*0.322667695;
-			tensionf[1] = ADC_Results[1]*0.322667695;
-
-			tension[0] = (unsigned int)tensionf[0];
-			tension[1] = (unsigned int)tensionf[1];
-				
-			MiApp_WriteData(tension[0]>>8);
-			chksum ^= tension[0]>>8;
-       		MiApp_WriteData(tension[0]&0x00FF);
-			chksum ^= tension[0]&0x00FF;
-       		
-			MiApp_WriteData(tension[1]>>8);
-			chksum ^= tension[1]>>8;
-       		MiApp_WriteData(tension[1]&0x00FF);
-			chksum ^= tension[1]&0x00FF;
 			
 			MiApp_WriteData(nombre_angles[IDCAPTEUR_HAUT]);
 			chksum ^= nombre_angles[IDCAPTEUR_HAUT];
@@ -724,7 +709,20 @@ int main(void)
 			testConn = 0;
 			MiApp_FlushTx();
 			MiApp_WriteData(IDBALISE);
-			MiApp_WriteData(0XF0);			
+			MiApp_WriteData(0XF5);		
+
+			tensionf[0] = ADC_Results[0]*0.322667695;
+			tensionf[1] = ADC_Results[1]*0.322667695;
+
+			tension[0] = (unsigned int)tensionf[0];
+			tension[1] = (unsigned int)tensionf[1];
+				
+			MiApp_WriteData(tension[0]>>8);
+       		MiApp_WriteData(tension[0]&0x00FF);
+       		
+			MiApp_WriteData(tension[1]>>8);
+       		MiApp_WriteData(tension[1]&0x00FF);
+	
 			MiApp_BroadcastPacket(FALSE);
 		}
     }//while(watchdog)
@@ -802,7 +800,7 @@ void __attribute__((__interrupt__)) _IC1Interrupt(void)
 	
 	ptr_fronts_haut=0;
 	ptr_fronts_bas=0;
-	if(watchdog++>30) Reset(); // protection ultime en cas de miwi + boucle principale bloquée
+	//if(watchdog++>30) Reset(); // protection ultime en cas de miwi + boucle principale bloquée
 	Fin_de_tour=1;
 }
 
