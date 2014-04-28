@@ -223,7 +223,7 @@ unsigned int hall_front;
 unsigned int motor_speed;
 float angle;
 
-
+unsigned char idbalise;
 
 
 char pwm(unsigned char motor, float value);
@@ -345,9 +345,6 @@ int main(void)
 	TRISCbits.TRISC8=1; // INT - Miwi
 //	TRISCbits.TRISC9=0; // CS1 - Codeur magnétique
 
-	SERVO_ON = 1;
-	LED=1;
-	while(1);
 
 	CNPU2bits.CN16PUE = 1;  // TOP_TOUR - Capteur effet hall
 	// A propos du top tour: cette fois ce n'est pas une bascule : etat bas quand champ magnétique > seuil
@@ -364,6 +361,8 @@ int main(void)
 	PWML=0;
 	LED=1;
 	AD1PCFGL = 0x1FC;	// All pins except VADCV1 & VADCV2		
+	
+	
 
     while(1)
 	{
@@ -467,7 +466,19 @@ int main(void)
 	
 	DMA5CONbits.CHEN=1;				// Enable DMA
 
+	
+	// RECBUN : RB2 = 1 RB3 = 0;
+	// RECBEU : RB2 = 0 RB3 = 1;
+	// RECBOI : RB2 = 0 RB3 = 0;
+	
 
+	idbalise = 0xB3;
+	if(PORTBbits.RB3 == 1)
+		idbalise = 0xB2;	
+	if(PORTBbits.RB2 == 1)
+		idbalise = 0xB1;
+			
+	
 	
     //LED_1 = 0;
     //LED_2 = 0;
@@ -584,7 +595,7 @@ int main(void)
 
 	// Signale sa présence
 	MiApp_FlushTx();
-	MiApp_WriteData(IDBALISE);
+	MiApp_WriteData(idbalise);
 	MiApp_WriteData(0XF5);		
 
 	tensionf[0] = ADC_Results[0]*0.322667695;
@@ -603,31 +614,27 @@ int main(void)
 	
 	motor_speed = 0;
 	
-		// Init T2 (servo)
+	// Init T4 (servo)
 
-	T2CONbits.TON 	= 0;	//Stops the timer
-	T2CONbits.TSIDL = 0;
-	T2CONbits.TGATE = 0;
-	T2CONbits.TCS	= 0;
-	T2CONbits.T32	= 0;
-	T2CONbits.TCKPS = 0b00;//10; //Prescaler set to 1:64
+	T4CONbits.TON 	= 0;	//Stops the timer
+	T4CONbits.TSIDL = 0;
+	T4CONbits.TGATE = 0;
+	T4CONbits.TCS	= 0;
+	T4CONbits.T32	= 0;
+	T4CONbits.TCKPS = 0b00;//10; //Prescaler set to 1:64
 	
-	TMR2 = 0; 				//Clear timer register
-	PR2  = 40;				//Full Period = 20.5 µs
+	TMR4 = 0; 				//Clear timer register
+	PR4  = 40;				//Full Period = 20.5 µs
 
-	IPC1bits.T2IP = 7; 		//Set Timer2 Interrupt Priority Level
-	IFS0bits.T2IF = 0; 		//Clear Timer2 Interrupt Flag
-	IEC0bits.T2IE = 1; 		//Enable Timer2 interrupt
-	T2CONbits.TON = 1;		//Timer enabled
+	IPC6bits.T4IP = 7; 		//Set Timer2 Interrupt Priority Level
+	IFS1bits.T4IF = 0; 		//Clear Timer2 Interrupt Flag
+	IEC1bits.T4IE = 1; 		//Enable Timer2 interrupt
+	T4CONbits.TON = 1;		//Timer enabled
 
 	
 
     while(watchdog<10)
     {	
-
-	
-	
-
 		if(Fin_de_tour == 1)
 		{
 			Fin_de_tour = 0;
@@ -646,8 +653,8 @@ int main(void)
 			}
 
 			MiApp_FlushTx();
-			MiApp_WriteData(IDBALISE);
-			chksum = IDBALISE;
+			MiApp_WriteData(idbalise);
+			chksum = idbalise;
 			MiApp_WriteData(IDREQUEST); // Answer ID
 			chksum ^= IDREQUEST;
 
@@ -701,7 +708,7 @@ int main(void)
             					
             // Toggle LED2 to indicate receiving a packet.
 
-			if(rxMessage.Payload[0] == IDBALISE)
+			if(rxMessage.Payload[0] == idbalise)
 			{
 				if(rxMessage.Payload[1] == 0x01)
 				{
@@ -716,7 +723,7 @@ int main(void)
 				{
 					
 					MiApp_FlushTx();
-					MiApp_WriteData(IDBALISE);
+					MiApp_WriteData(idbalise);
 					MiApp_WriteData(IDREQUEST); // Answer ID
 										
 					MiApp_WriteData(nombre_angles[IDCAPTEUR_HAUT]);
@@ -775,7 +782,7 @@ int main(void)
 		{
 			testConn = 0;
 			MiApp_FlushTx();
-			MiApp_WriteData(IDBALISE);
+			MiApp_WriteData(idbalise);
 			MiApp_WriteData(0XF5);		
 
 			tensionf[0] = ADC_Results[0]*0.322667695;
@@ -849,6 +856,7 @@ void __attribute__((__interrupt__)) _IC1Interrupt(void)
 	
 	IFS0bits.IC1IF=0;
 	LASER_ON=1;
+
 	nombre_angles[IDCAPTEUR_HAUT] = ptr_fronts_haut;
 	nombre_angles[IDCAPTEUR_BAS] = ptr_fronts_bas;
 
@@ -944,9 +952,9 @@ void __attribute__((interrupt, no_auto_psv)) _DMA5Interrupt(void)
 }
 
 
-void __attribute__((__interrupt__,__auto_psv__)) _T2Interrupt(void)
+void __attribute__((__interrupt__,__auto_psv__)) _T4Interrupt(void)
 {	
-	IFS0bits.T2IF = 0; 		//Clear Timer1 Interrupt flag
+	IFS1bits.T4IF = 0; 		//Clear Timer1 Interrupt flag
 	
 	Cpt_Tmr_Periode++;
 	
