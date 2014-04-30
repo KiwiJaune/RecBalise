@@ -233,6 +233,10 @@ void InitCapteurs()
 	//TRISAbits.TRISA7 = 1;	// Capteur bas en entrée
 }
 
+void FonctionDebug(int numDebug)
+{
+}
+
 /*********************************************************************
 * Function:         void main(void)
 *
@@ -634,6 +638,10 @@ int main(void)
 				else if(rxMessage.Payload[1] == 0xF1) // RESET
 				{
 					Reset();
+				}
+				else if(rxMessage.Payload[1] == 0xEE) // RESET
+				{
+					FonctionDebug(rxMessage.Payload[2]);
 				}
 			}
             
