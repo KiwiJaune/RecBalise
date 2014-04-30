@@ -55,11 +55,7 @@
 #include "HardwareProfile.h"
 
 
-    _FOSCSEL(FNOSC_PRI);                                    //primary osc
-    _FOSC(OSCIOFNC_OFF & POSCMD_XT)                         // XT Osc
-    _FWDT(FWDTEN_OFF & WDTPOST_PS2)                         // Disable Watchdog timer
-    // JTAG should be disabled as well
-
+    
 #define DEBOUNCE_TIME 0x00003FFF
 
 BOOL PUSH_BUTTON_pressed;
@@ -86,33 +82,21 @@ MIWI_TICK PUSH_BUTTON_press_time;
 void BoardInit(void)
 {
     
-    // Make RB0 as Digital input
-    //AD1PCFGbits.PCFG2 = 1;
-    AD1PCFGL=0xFFFF;
+    //TRISBbits.TRISB8 = 1;
+	//TRISBbits.TRISB9 = 0;
+	//TRISCbits.TRISC0 = 0;
 
-	TRISBbits.TRISB8 = 1;
-	TRISBbits.TRISB9 = 0;
-	TRISCbits.TRISC0 = 0;
-
-	RPOR4bits.RP9R     = 0b01011;	//SCK2			<==> RB9
-	RPINR22bits.SDI2R = 0b01000;	//SDI2			<==> RB8
-	RPOR8bits.RP16R   = 0b01010;	//SDO2			<==> RC0
+	//RPOR4bits.RP9R     = 0b01011;	//SCK2			<==> RB9
+	//RPINR22bits.SDI2R = 0b01000;	//SDI2			<==> RB8
+	//RPOR8bits.RP16R   = 0b01010;	//SDO2			<==> RC0
         
-    // set I/O ports
-    BUTTON_1_TRIS = 1;
-    BUTTON_2_TRIS = 1;
-    LED_1_TRIS = 0;
-    LED_2_TRIS = 0;
-       
-
     PHY_CS_TRIS = 0;
     PHY_CS = 1;
     PHY_RESETn_TRIS = 0;
     PHY_RESETn = 1;
 
     RF_INT_TRIS = 1;
-  	//TRISBbits.TRISB7 = 1;
-	RPINR0bits.INT1R = 0b00111; 	// INT1			<==> RP7   
+	//RPINR0bits.INT1R = 0b00111; 	// INT1			<==> RP7   
 		   
     SDI_TRIS = 1;
     SDO_TRIS = 0;
@@ -120,9 +104,9 @@ void BoardInit(void)
     SPI_SDO = 0;        
     SPI_SCK = 0;  
                    
-    RPOR1bits.RP3R    = 0b01000;	// SCK1			<==> RB3
-	RPINR20bits.SDI1R = 0b00100; 	// SDI1			<==> RP4
-	RPOR1bits.RP2R    = 0b00111;	// SDO1 		<==> RB2
+    RPOR10bits.RP21R    = 0b01000;	// SCK1	<==> RC5 ; RP21
+	RPINR20bits.SDI1R = 20; 		// SDI1	<==> RC4 ; RP20
+	RPOR2bits.RP5R    = 0b00111;	// SDO 	<==> RB5 ; RP5
         
     PHY_WAKE_TRIS = 0;
     PHY_WAKE = 1;

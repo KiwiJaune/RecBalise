@@ -64,50 +64,36 @@
 
     #define CLOCK_FREQ      8000000
           
-    #define RF_INT_PIN      PORTBbits.RB7
-    #define RF_INT_TRIS     TRISBbits.TRISB7
+    #define RF_INT_PIN      PORTBbits.RB6
+    #define RF_INT_TRIS     TRISBbits.TRISB6
       
     #define USE_EXTERNAL_EEPROM
            
     // Transceiver Configuration
 
-	#define PHY_CS              LATAbits.LATA9 
-	#define PHY_CS_TRIS         TRISAbits.TRISA9 
-	#define PHY_RESETn          LATAbits.LATA4
-	#define PHY_RESETn_TRIS     TRISAbits.TRISA4
+	#define PHY_CS              LATAbits.LATA4 
+	#define PHY_CS_TRIS         TRISAbits.TRISA4 
+	#define PHY_RESETn          LATCbits.LATC6
+	#define PHY_RESETn_TRIS     TRISCbits.TRISC6
 
-	#define SPI_SDI             PORTBbits.RB4
-	#define SDI_TRIS            TRISBbits.TRISB4
-	#define SPI_SDO             LATBbits.LATB2 
-	#define SDO_TRIS            TRISBbits.TRISB2
-	#define SPI_SCK             LATBbits.LATB3 
-	#define SCK_TRIS            TRISBbits.TRISB3
+	#define SPI_SDI             PORTCbits.RC4
+	#define SDI_TRIS            TRISCbits.TRISC4
+	#define SPI_SDO             LATBbits.LATB5 
+	#define SDO_TRIS            TRISBbits.TRISB5
+	#define SPI_SCK             LATCbits.LATC5 
+	#define SCK_TRIS            TRISCbits.TRISC5
 	
-	#define PHY_WAKE        	LATAbits.LATA1
-	#define PHY_WAKE_TRIS   	TRISAbits.TRISA1
+	#define PHY_WAKE        	LATBbits.LATB7
+	#define PHY_WAKE_TRIS   	TRISBbits.TRISB7
 	
-	#define PUSH_BUTTON_1       PORTBbits.RB14
-	#define PUSH_BUTTON_2       PORTBbits.RB15
-	#define LED_1               LATBbits.LATB13
-	#define LED_2               LATBbits.LATB12
-
-	#define LED_VERTE			LED_1
-	#define LED_ROUGE			LED_2
-	#define LED_ON				0
-	#define LED_OFF				1
-	
-	#define BUTTON_1_TRIS       TRISBbits.TRISB14
-	#define BUTTON_2_TRIS       TRISBbits.TRISB15
-	#define LED_1_TRIS          TRISBbits.TRISB13
-	#define LED_2_TRIS          TRISBbits.TRISB12
 	
 	// Define SUPPORT_TWO_SPI if external EEPROM use the second SPI
 	// port alone, not sharing SPI port with the transceiver
 	#define SUPPORT_TWO_SPI
 	
 	// External EEPROM SPI chip select pin definition
-	#define EE_nCS_TRIS         TRISBbits.TRISB1
-	#define EE_nCS              LATBbits.LATB1
+	#define EE_nCS_TRIS         TRISBbits.TRISB4
+	#define EE_nCS              LATBbits.LATB4
 	
 	#define TMRL TMR2
 
