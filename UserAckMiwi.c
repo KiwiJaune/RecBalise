@@ -256,8 +256,8 @@ void ReceptionMiwi(char expediteur, Trame trame)
 	unsigned char indiceCanal = 0;
 	unsigned char indiceBloquantAltRecu;
 		
-	indiceCanal = CanalAttribution(expediteur);	
-	LED = !ETAT_LED;
+	indiceCanal = CanalAttribution(expediteur);
+
 	if(trame.nbChar > LONGEUR_TRAME_ACK && !VerifChecksum(trame))
 		return;
 		
@@ -329,8 +329,8 @@ void __attribute__((__interrupt__,__auto_psv__)) _T5Interrupt(void){
 	//Date d'envoi Miwi	
 	now++;
 
-	//if(now%500 == 0)
-	//	LED = !ETAT_LED;
+	if(now%500 == 0)
+		LED = !ETAT_LED;
 	
 	for(iCanal = 0; iCanal < NB_CANAUX; iCanal++)
 	{
