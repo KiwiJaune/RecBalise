@@ -434,7 +434,7 @@ int main(void)
 			
 			indiceTabTrameMiwi += nombre_angles[IDCAPTEUR_HAUT]*2;
 			
-			for(i = 0; i < nombre_angles[IDCAPTEUR_BAS]; i++)
+			for(i = 0; i < nombre_angles[IDCAPTEUR_BAS]; i+=2)
 			{
 				trameMiwiTx.message[indiceTabTrameMiwi+i] = buffer_angles[IDCAPTEUR_BAS][2*i];	 //MSB
 				chksum ^= buffer_angles[IDCAPTEUR_BAS][2*i];

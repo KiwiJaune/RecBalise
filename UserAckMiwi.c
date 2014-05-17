@@ -260,9 +260,10 @@ void ReceptionMiwi(char expediteur, Trame trame)
 
 	if(trame.nbChar > LONGEUR_TRAME_ACK && !VerifChecksum(trame))
 		return;
-		
 	if(trame.message[0] == BLOQUANT_A || trame.message[0] == BLOQUANT_B)
 	{	
+		LED = !ETAT_LED;
+
 		EnvoiAck(expediteur, trameAckBloquant);
 		indiceBloquantAltRecu = trame.message[0];
 		
@@ -283,6 +284,8 @@ void ReceptionMiwi(char expediteur, Trame trame)
 	}
 	else if (trame.message[0] == BUFFER)
 	{
+		LED = !ETAT_LED;
+
 		EnvoiAck(expediteur, trameAckBuffer);
 		trame.message = &trame.message[2];
 		trame.nbChar -= 3;
@@ -357,7 +360,7 @@ void MiwiTasks(void)
 
 	//Check if any msg have been received
 	if(RadioRXPacket())
-	{			LED = !ETAT_LED;
+	{			
 		trameRecu.nbChar = Rx.payloadLength;		
 		//Copy received miwi message	
 		for(i = 0; i< Rx.payloadLength ; i++)
