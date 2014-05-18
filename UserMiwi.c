@@ -1,14 +1,12 @@
 #include "UserMiwi.h"
 
-
 UINT8 txPayload[TX_PAYLOAD_SIZE];
 
-void InitMiwi(void)
+void InitMiwi(int adr)
 {
-	
-	InitAckMiwi();		
+	InitAckMiwi(adr);		
 	RadioHW_Init(TRUE);
-    RadioInit();
+    RadioInit(adr);
     RadioSetChannel(MY_CHANNEL);
     RadioInitP2P();
 }
@@ -44,8 +42,6 @@ void Envoi(char destinataire, Trame trame)
 	RadioTXPacket();
 }
 
-
-
 void EnvoiDebug(char a, char b, char c, char d)
 {	
 	txPayload[0] = a;
@@ -59,7 +55,7 @@ void EnvoiDebug(char a, char b, char c, char d)
 	RadioTXPacket();
 }
 
-void EnvoiAck(char destinataire, Trame trame)
+void EnvoiAck(char destinataire, int myAddress, Trame trame)
 {
 	int iChar;
 	
@@ -67,7 +63,7 @@ void EnvoiAck(char destinataire, Trame trame)
 	{
 		txPayload[iChar] = trame.message[iChar];
 	}
-	txPayload[1] = MY_SHORT_ADDRESS;
+	txPayload[1] = myAddress;
 	Tx.dstAddr = 0x00FF & destinataire;
 	Tx.payloadLength = trame.nbChar+1;
 	RadioTXPacket();

@@ -11,8 +11,8 @@ void Envoi(char destinataire, Trame trame);
 int CalculChecksum(Trame trame, char checksumPresent);
 void RadioInitP2P(void);
 void Init_Timer5(void);
-void InitMiwi(void);
-void EnvoiAck(char destinataire, Trame trame);
+void InitMiwi(int address);
+void EnvoiAck(char destinataire, int myAddress, Trame trame);
 void EnvoiDebug(char a, char b, char c, char d);
 
 #define	DEFAULT_PAYLOAD 30

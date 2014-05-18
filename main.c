@@ -13,35 +13,6 @@ _FICD(JTAGEN_OFF & ICS_PGD1);
 /************************** VARIABLES ************************************/
 #define CARTE_MIWI 0x00C2
 
-#define LIGHT   0x01
-#define SWITCH  0x02
-
-#define RECBUFFER 		50			// Taille du buffer reception UART
-#define FCY             40000000	// Nombre d'instructions par secondes (IPS)
-#define BAUDRATE        115200		// Debit UART (RS232)
-#define BRGVAL          ((FCY/BAUDRATE)/16)-1 // Precalcul pour le baudrate generator
-#define N				2			// Nombre de moteurs
-#define DEFAULT_KP		1//10//70			// Coefficient proporionnel 
-#define DEFAULT_KI		50//20//10			// Coefficient integral (inverse !)
-#define DEFAULT_KD		0//90//110			// Coefficient derive
-#define CODEUR			500 		// Nombre de pas par tour moteur (sans le ratio x4)
-#define REDUCTEUR		1	// Reducteur utilise en sortie d'arbre moteur (=1 si roue codeuse indépendante)
-#define DIAMETRE_ROUE 	35*1.071//1.064019			// Diametre de la roue motrice (ou roue codeuse si indépendante) en mm 
-#define PI 				3.1416		// Ben pi quoi
-#define VOIE			280*1.014//1.0344827586206896551724137931034//1.006	//1.0344827586206896551724137931034			// Distance entre les deux roues en mm
-#define COEFF_ROUE		1.0000		// Coeff d'ajustement pour le diametre de la roue
-#define COEFF_VOIE		1.0000		// Coeff d'ajustement pour la voie
-#define MM_SCALER		COEFF_ROUE*DIAMETRE_ROUE*PI/(4*CODEUR*REDUCTEUR) // Formule de conversion [pas]<==>[mm]
-#define MM_INVSCALER	4*CODEUR*REDUCTEUR/(COEFF_ROUE*DIAMETRE_ROUE*PI)
-#define DEFAULT_SPEED	500			// Vitesse par défaut en mm/s
-#define	MAX_SPEED		500
-#define DEFAULT_ACCEL	500			// Acceleration par défaut en mm/s^2
-#define ERROR_ALLOWED	1			// En cas de sifflement moteur intempestif (en pas)
-#define KP	0
-#define KI	1
-#define KD	2
-
-
 #define SERVO_ON	LATAbits.LATA8 
 #define LED 		LATCbits.LATC7 
 #define LASER_ON	LATAbits.LATA7 
@@ -55,38 +26,6 @@ _FICD(JTAGEN_OFF & ICS_PGD1);
 #define SIGNAL_SERVO1 		LATAbits.LATA3
 #define SIGNAL_SERVO2		LATCbits.LATC2
 #define CPT_PERIODE_20MS	6250
-
-#define STOP			0x01
-#define VITESSE			0x02
-#define ACCELERATION	0x03
-#define AVANCE			0x04
-#define PIVOT			0x05
-#define VIRAGE			0x06
-#define DISTANCE		0x08
-#define ARRIVE			0x10
-#define PIVOTG			0x11
-#define PIVOTD			0x12
-#define RECULE			0x13
-#define COUPURE			0x66
-#define COEFF_P			0x20
-#define COEFF_I			0x21
-#define COEFF_D			0x22
-#define ROULEAU_AV		0x81
-#define ROULEAU_AR		0x82
-
-//#define FALSE			0x00
-//#define TRUE			0x01
-
-
-#define AVANT 			0			// Convention 
-#define ARRIERE 		1
-#define GAUCHE 			2			
-#define DROITE 			3
-#define ON				1
-#define OFF				0
-#define FREELY			0
-#define SMOOTH			1
-#define ABRUPT			2
 
 #define BALISE 			4
 
@@ -171,19 +110,6 @@ int main(void)
 	static BYTE messMiwiRx[50];
 	trameMiwiRx.message = messMiwiRx;
 	
-	//Init Miwi
-	InitMiwi();
-		
-	/*for(wait=0;wait<65000;wait++) // Tempo : 60 nop x 65000 ~100ms min (@40MIPS)
-	{
-		Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();
-		Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();
-		Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();
-		Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();
-		Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();
-		Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();Nop();
-	}*/
-
 	TRISAbits.TRISA0=1; // VADCV1 - Gestion d'alim
 	TRISAbits.TRISA1=1; // VADCV2 - Gestion d'alim
 	TRISAbits.TRISA2=1; // Oscillateur 8MHz - Oscillateur
@@ -228,7 +154,6 @@ int main(void)
 	CNPU1bits.CN8PUE = 1; // LR61_1 - Detecteur laser
 	CNPU1bits.CN9PUE = 1; // LR61_2 - Detecteur laser
 	
-
 	SERVO_ON = 0;	// 5V OFF
 	LED = 0; 		// LED OFF 
 	LASER_ON = 0;	// LASER_OFF
@@ -244,6 +169,15 @@ int main(void)
 	    Initpwm();		// Configuration du module PWM 
 		pwm(BALISE, 0);    
 	    
+		idbalise = 0xB3;
+		if(PORTBbits.RB3 == 1)
+			idbalise = 0xB2;	
+		if(PORTBbits.RB2 == 1)
+			idbalise = 0xB1;
+	
+		//Init Miwi
+		InitMiwi(idbalise);
+
 		RPINR7bits.IC1R = 10;  // Capteur effet hall
 		RPINR7bits.IC2R = 16;  // Capteur laser 1 (bas)
 		RPINR10bits.IC7R = 17; // Capteur laser 2 (haut)
@@ -340,13 +274,7 @@ int main(void)
 		// RECBUN : RB2 = 1 RB3 = 0;
 		// RECBEU : RB2 = 0 RB3 = 1;
 		// RECBOI : RB2 = 0 RB3 = 0;
-		
-		idbalise = 0xB3;
-		if(PORTBbits.RB3 == 1)
-			idbalise = 0xB2;	
-		if(PORTBbits.RB2 == 1)
-			idbalise = 0xB1;
-	
+
 		// Signale sa présence
 		trameMiwiTx.message[0] = idbalise;
 		trameMiwiTx.message[1] = 0xF5;
@@ -419,18 +347,18 @@ int main(void)
 	       		
 				indiceTabTrameMiwi = 6;
 				
-	       		for(i = 0; i < nombre_angles[IDCAPTEUR_HAUT]; i+=2)
+	       		for(i = 0; i < nombre_angles[IDCAPTEUR_HAUT]; i++)
 				{
-					trameMiwiTx.message[indiceTabTrameMiwi+i] = buffer_angles[IDCAPTEUR_HAUT][2*i];	//MSB
-	       			trameMiwiTx.message[indiceTabTrameMiwi+1+i] = buffer_angles[IDCAPTEUR_HAUT][2*i+1]; //LSB
+					trameMiwiTx.message[indiceTabTrameMiwi+i*2] = buffer_angles[IDCAPTEUR_HAUT][2*i];	//MSB
+	       			trameMiwiTx.message[indiceTabTrameMiwi+1+i*2] = buffer_angles[IDCAPTEUR_HAUT][2*i+1]; //LSB
 				}
 				
 				indiceTabTrameMiwi += nombre_angles[IDCAPTEUR_HAUT]*2;
 				
-				for(i = 0; i < nombre_angles[IDCAPTEUR_BAS]; i+=2)
+				for(i = 0; i < nombre_angles[IDCAPTEUR_BAS]; i++)
 				{
-					trameMiwiTx.message[indiceTabTrameMiwi+i] = buffer_angles[IDCAPTEUR_BAS][2*i];	 //MSB
-	       			trameMiwiTx.message[indiceTabTrameMiwi+1+i] = buffer_angles[IDCAPTEUR_BAS][2*i+1]; //LSB
+					trameMiwiTx.message[indiceTabTrameMiwi+i*2] = buffer_angles[IDCAPTEUR_BAS][2*i];	 //MSB
+	       			trameMiwiTx.message[indiceTabTrameMiwi+1+i*2] = buffer_angles[IDCAPTEUR_BAS][2*i+1]; //LSB
 				}
 				
 				indiceTabTrameMiwi += nombre_angles[IDCAPTEUR_BAS]*2;
@@ -517,8 +445,6 @@ char pwm(unsigned char motor, float value) // Value = +/- 4000
 	/*if(value >  2000) value =  2000; // config de test, faible puissance
 	if(value < -2000) value = -2000;*/
 	
-	if(motor==GAUCHE) value = -value;
-
 	switch(motor)
 	{
 		case BALISE: 

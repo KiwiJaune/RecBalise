@@ -15,6 +15,9 @@ ACK Buffer
 #include "UserAckMiwi.h"
 #include <p33FJ128MC804.h>
 
+// Mon address
+int address;
+
 //Indice du message bloquant 10 ou 11 pour l'envoi
 unsigned char indiceBloquantAlt[NB_CANAUX];
 
@@ -72,13 +75,19 @@ static BYTE messageATraiter[TAILLE_MAX_TRAME];
 //Gestion canal
 static BYTE canaux[NB_CANAUX];
 
-void InitAckMiwi(void)
+int MyAddress()
+{
+	return address;
+}
+
+void InitAckMiwi(int adr)
 {
 	int iCanal = 0;
 	int iBuffer = 0;
 	InitAckBuffer();
 	InitAckBloquant();
 	InitTimer5();
+	address = adr;
 	
 	trameATraiter.message = messageATraiter;		
 	
@@ -150,7 +159,7 @@ void EnvoiMiwi(char destinataire, char bloquant, Trame trame)
 			trameBuffer[indiceCanal].message[i+2] = trame.message[i];
 		}
 		trameBuffer[indiceCanal].message[0] = BUFFER;
-		trameBuffer[indiceCanal].message[1] = MY_SHORT_ADDRESS;
+		trameBuffer[indiceCanal].message[1] = MyAddress();
 		trameBuffer[indiceCanal].nbChar = trame.nbChar + 2;
 		
 		destinataireBuffer[indiceCanal] = destinataire;
@@ -171,7 +180,7 @@ void EnvoiMiwi(char destinataire, char bloquant, Trame trame)
 			trameBloquant[indiceCanal][indiceLibreBloquant[indiceCanal]].message[i+2] = trame.message[i];
 		}
 		trameBloquant[indiceCanal][indiceLibreBloquant[indiceCanal]].message[0] = indiceBloquantAlt[indiceCanal];
-		trameBloquant[indiceCanal][indiceLibreBloquant[indiceCanal]].message[1] = MY_SHORT_ADDRESS;
+		trameBloquant[indiceCanal][indiceLibreBloquant[indiceCanal]].message[1] = MyAddress();
 		
 		trameBloquant[indiceCanal][indiceLibreBloquant[indiceCanal]].nbChar = trame.nbChar + 2;
 		
@@ -264,7 +273,7 @@ void ReceptionMiwi(char expediteur, Trame trame)
 	{	
 		LED = !ETAT_LED;
 
-		EnvoiAck(expediteur, trameAckBloquant);
+		EnvoiAck(expediteur, MyAddress(), trameAckBloquant);
 		indiceBloquantAltRecu = trame.message[0];
 		
 		if(indiceBloquantAltRecu != previousIndiceBloquantAltRecu[indiceCanal])	
@@ -286,7 +295,7 @@ void ReceptionMiwi(char expediteur, Trame trame)
 	{
 		LED = !ETAT_LED;
 
-		EnvoiAck(expediteur, trameAckBuffer);
+		EnvoiAck(expediteur, MyAddress(), trameAckBuffer);
 		trame.message = &trame.message[2];
 		trame.nbChar -= 3;
 		

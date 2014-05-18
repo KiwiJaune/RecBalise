@@ -123,7 +123,7 @@ typedef struct
 void MRF24J40_Timer(void);
 UINT64 timerTicksSince(UINT64 savedTimer);
 
-BOOL   RadioInit(void);
+BOOL   RadioInit(int address);
 void   RadioSetAddress(UINT16 shortAddress, UINT64 longAddress, UINT16 panID);
 BOOL   RadioSetChannel(UINT8 channel);
 void   RadioSetSleep(UINT8 powerState);
