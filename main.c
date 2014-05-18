@@ -188,7 +188,7 @@ int main(void)
 		IC1CONbits.ICI = 0b00; // Interrupt on every capture event
 		IC1CONbits.ICM = 0b011; // Generate capture event on every Rising edge
 		// Enable Capture Interrupt And Timer2
-		IPC0bits.IC1IP = 3; // Setup IC1 interrupt priority level
+		IPC0bits.IC1IP = 5; // Setup IC1 interrupt priority level
 		IFS0bits.IC1IF = 0; // Clear IC1 Interrupt Status Flag
 		IEC0bits.IC1IE = 1; // Enable IC1 interrupt
 		
@@ -198,7 +198,7 @@ int main(void)
 		IC2CONbits.ICI = 0b00; // Interrupt on every capture event
 		IC2CONbits.ICM = 0b011; // Generate capture event on every edge // change
 		// Enable Capture Interrupt And Timer2
-		IPC1bits.IC2IP = 2; // Setup IC1 interrupt priority level
+		IPC1bits.IC2IP = 6; // Setup IC1 interrupt priority level
 		IFS0bits.IC2IF = 0; // Clear IC1 Interrupt Status Flag
 		IEC0bits.IC2IE = 1; // Enable IC1 interrupt
 		
@@ -208,7 +208,7 @@ int main(void)
 		IC7CONbits.ICI = 0b00; // Interrupt on every capture event
 		IC7CONbits.ICM = 0b011; // Generate capture event on every edge // change
 		// Enable Capture Interrupt And Timer2
-		IPC5bits.IC7IP = 1; // Setup IC1 interrupt priority level
+		IPC5bits.IC7IP = 6; // Setup IC1 interrupt priority level
 		IFS1bits.IC7IF = 0; // Clear IC1 Interrupt Status Flag
 		IEC1bits.IC7IE = 1; // Enable IC1 interrupt
 		
@@ -309,7 +309,7 @@ int main(void)
 		TMR4 = 0; 				//Clear timer register
 		PR4  = 40;				//Full Period = 20.5 µs
 	
-		IPC6bits.T4IP = 7; 		//Set Timer2 Interrupt Priority Level
+		IPC6bits.T4IP = 5; 		//Set Timer2 Interrupt Priority Level
 		IFS1bits.T4IF = 0; 		//Clear Timer2 Interrupt Flag
 		IEC1bits.T4IE = 1; 		//Enable Timer2 interrupt
 		T4CONbits.TON = 1;		//Timer enabled

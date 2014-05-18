@@ -138,7 +138,7 @@ void InitTimer5(void)
 	TMR5 = 0; 				//Clear timer register
 	PR5  = TIMER_PR_VALUE;  //Load the period value (Pas) 1/(4e6/8/500) = 1ms
 
-	IPC7bits.T5IP = 7; 		//Set Timer5 Interrupt Priority Level
+	IPC7bits.T5IP = 4; 		//Set Timer5 Interrupt Priority Level
 	IFS1bits.T5IF = 0; 		//Clear Timer5 Interrupt Flag
 	IEC1bits.T5IE = 1; 		//Enable Timer5 interrupt
 }
