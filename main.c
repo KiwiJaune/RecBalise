@@ -577,7 +577,7 @@ void __attribute__((__interrupt__,__auto_psv__)) _T4Interrupt(void)
 	{
 		SIGNAL_SERVO2 = FALLING_EDGE;
 	}
-	if(Cpt_Tmr_Periode == 1500) // 15 ms periode
+	if(Cpt_Tmr_Periode == 2000) // 20 ms periode
 	{
 		SIGNAL_SERVO1 = RISING_EDGE;
 		SIGNAL_SERVO2 = RISING_EDGE;
