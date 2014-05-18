@@ -102,7 +102,6 @@ unsigned int ADC_Results[8],DmaBuffer = 0,tension[2];
 float tensionf[2];
 
 unsigned char watchdog=0;
-unsigned char chksum;
 unsigned int periode_tour;
 char Fin_de_tour = 0;
 char capteurHautPrec = 0;
@@ -239,319 +238,274 @@ int main(void)
 	
     while(1)
 	{
-    /*******************************************************************/
-    // Initialize the system
-    /*******************************************************************/
-    Initpwm();		// Configuration du module PWM 
-	pwm(BALISE, 0);    
-    
-	RPINR7bits.IC1R = 10;  // Capteur effet hall
-	RPINR7bits.IC2R = 16;  // Capteur laser 1 (bas)
-	RPINR10bits.IC7R = 17; // Capteur laser 2 (haut)
-	
-	// Initialize the Input Capture Module
-	IC1CONbits.ICM = 0b00; // Disable Input Capture 1 module
-	IC1CONbits.ICTMR = 1; // Select Timer2 as the IC1 Time base
-	IC1CONbits.ICI = 0b00; // Interrupt on every capture event
-	IC1CONbits.ICM = 0b011; // Generate capture event on every Rising edge
-	// Enable Capture Interrupt And Timer2
-	IPC0bits.IC1IP = 3; // Setup IC1 interrupt priority level
-	IFS0bits.IC1IF = 0; // Clear IC1 Interrupt Status Flag
-	IEC0bits.IC1IE = 1; // Enable IC1 interrupt
-	
-	// Initialize the Input Capture Module
-	IC2CONbits.ICM = 0b00; // Disable Input Capture 1 module
-	IC2CONbits.ICTMR = 1; // Select Timer2 as the IC1 Time base
-	IC2CONbits.ICI = 0b00; // Interrupt on every capture event
-	IC2CONbits.ICM = 0b011; // Generate capture event on every edge // change
-	// Enable Capture Interrupt And Timer2
-	IPC1bits.IC2IP = 2; // Setup IC1 interrupt priority level
-	IFS0bits.IC2IF = 0; // Clear IC1 Interrupt Status Flag
-	IEC0bits.IC2IE = 1; // Enable IC1 interrupt
-	
-	// Initialize the Input Capture Module
-	IC7CONbits.ICM = 0b00; // Disable Input Capture 1 module
-	IC7CONbits.ICTMR = 1; // Select Timer2 as the IC1 Time base
-	IC7CONbits.ICI = 0b00; // Interrupt on every capture event
-	IC7CONbits.ICM = 0b011; // Generate capture event on every edge // change
-	// Enable Capture Interrupt And Timer2
-	IPC5bits.IC7IP = 1; // Setup IC1 interrupt priority level
-	IFS1bits.IC7IF = 0; // Clear IC1 Interrupt Status Flag
-	IEC1bits.IC7IE = 1; // Enable IC1 interrupt
-	
-
-	// Init ADC
-
-	AD1CON1bits.FORM   = 0;		// Data Output Format: Integer
-	AD1CON1bits.SSRC   = 7;		// Sample Clock Source: Conversion autostart
-	AD1CON1bits.ASAM   = 1;		// ADC Sample Control: Sampling begins immediately after conversion
-	AD1CON1bits.AD12B  = 1;		// 12-bit ADC operation
-
-	AD1CON2bits.CSCNA = 1;		// Scan Input Selections for CH0+ during Sample A bit
-	AD1CON2bits.CHPS  = 0;		// Converts CH0
-
-	AD1CON3bits.ADRC = 0;		// ADC Clock is derived from Systems Clock
-	AD1CON3bits.ADCS = 63;		// ADC Conversion Clock Tad=Tcy*(ADCS+1)= (1/40M)*64 = 1.6us (625Khz)
-								// ADC Conversion Time for 10-bit Tc=12*Tab = 19.2us	
-	
-	AD1CON1bits.ADDMABM = 0; 	// DMA buffers are built in scatter/gather mode
-	AD1CON2bits.SMPI    = (NUM_CHS2SCAN-1);	// 6 ADC Channel is scanned
-	AD1CON4bits.DMABL   = 3;	// Each buffer contains 8 words
-
-	//AD1CSSH/AD1CSSL: A/D Input Scan Selection Register
-	AD1CSSLbits.CSS0=1;		// Enable AN0 for channel scan
-	AD1CSSLbits.CSS1=1;		// Enable AN1 for channel scan
-	AD1CSSLbits.CSS2=0;		// Enable AN2 for channel scan
-	AD1CSSLbits.CSS3=0;		// Enable AN3 for channel scan
-	AD1CSSLbits.CSS6=0;		// Enable AN6 for channel scan
-	AD1CSSLbits.CSS7=1;		// Enable AN7 for channel scan
-	AD1CSSLbits.CSS8=0;		// Enable AN8 for channel scan
-	
- 	//AD1PCFGH/AD1PCFGL: Port Configuration Register
-	AD1PCFGL=0xFFFF;
-	AD1PCFGLbits.PCFG0 = 0;	// AN0 as Analog Input
-	AD1PCFGLbits.PCFG1 = 0;	// AN1 as Analog Input
- 	AD1PCFGLbits.PCFG2 = 1;	// AN2 as Digital Input
-	AD1PCFGLbits.PCFG3 = 1;	// AN3 as Digital Input 
-	AD1PCFGLbits.PCFG6 = 1;	// AN6 as Digital Input
-	AD1PCFGLbits.PCFG7 = 0;	// AN7 as Analog Input
-	AD1PCFGLbits.PCFG8 = 1;	// AN8 as Digital Input 
-	
-	IFS0bits.AD1IF   = 0;		// Clear the A/D interrupt flag bit
-	IEC0bits.AD1IE   = 0;		// Do Not Enable A/D interrupt 
-	AD1CON1bits.ADON = 1;		// Turn on the A/D converter
-
-	// Init DMA
-
-	DMA5CONbits.AMODE = 2;			// Configure DMA for Peripheral indirect mode
-	DMA5CONbits.MODE  = 2;			// Configure DMA for Continuous Ping-Pong mode
-	DMA5PAD=(int)&ADC1BUF0;
-	DMA5CNT = (SAMP_BUFF_SIZE*NUM_CHS2SCAN)-1;					
-	DMA5REQ = 13;					// Select ADC1 as DMA Request source
-
-	DMA5STA = __builtin_dmaoffset(BufferA);		
-	DMA5STB = __builtin_dmaoffset(BufferB);
-
-	IFS3bits.DMA5IF = 0; //Clear the DMA interrupt flag bit
-	IEC3bits.DMA5IE = 1; //Set the DMA interrupt enable bit
-	
-	DMA5CONbits.CHEN=1;				// Enable DMA
-
-	
-	// RECBUN : RB2 = 1 RB3 = 0;
-	// RECBEU : RB2 = 0 RB3 = 1;
-	// RECBOI : RB2 = 0 RB3 = 0;
-	
-	idbalise = 0xB3;
-	if(PORTBbits.RB3 == 1)
-		idbalise = 0xB2;	
-	if(PORTBbits.RB2 == 1)
-		idbalise = 0xB1;
-
-	// Signale sa présence
-	trameMiwiTx.message[0] = idbalise;
-	trameMiwiTx.message[1] = 0xF5;
-	
-	tensionf[0] = ADC_Results[0]*0.322667695;
-	tensionf[1] = ADC_Results[1]*0.322667695;
-
-	tension[0] = (unsigned int)tensionf[0];
-	tension[1] = (unsigned int)tensionf[1];
-	
-	trameMiwiTx.message[2] = tension[0]>>8;
-	trameMiwiTx.message[3] = tension[0]&0x00FF;
-     		
-	trameMiwiTx.message[4] = tension[1]>>8;
-	trameMiwiTx.message[5] = tension[1]&0x00FF;
-	
-	MiwiTasks();
-	trameMiwiTx.nbChar = 6;
-	EnvoiMiwi(CARTE_MIWI, BUFFER, trameMiwiTx);
-	//EnvoiDebug(MY_SHORT_ADDRESS >> 8, MY_SHORT_ADDRESS, 10, 12);
-	//EnvoiDebug(PORTBbits.RB3, PORTBbits.RB2, 3, 4);
-	motor_speed = 0;
-	
-	// Init T4 (servo)
-	T4CONbits.TON 	= 0;	//Stops the timer
-	T4CONbits.TSIDL = 0;
-	T4CONbits.TGATE = 0;
-	T4CONbits.TCS	= 0;
-	T4CONbits.T32	= 0;
-	T4CONbits.TCKPS = 0b00;//10; //Prescaler set to 1:64
-	
-	TMR4 = 0; 				//Clear timer register
-	PR4  = 40;				//Full Period = 20.5 µs
-
-	IPC6bits.T4IP = 7; 		//Set Timer2 Interrupt Priority Level
-	IFS1bits.T4IF = 0; 		//Clear Timer2 Interrupt Flag
-	IEC1bits.T4IE = 1; 		//Enable Timer2 interrupt
-	T4CONbits.TON = 1;		//Timer enabled
-
-	while(watchdog<10)
-    {	
-		if(Fin_de_tour == 1)
-		{
-			Fin_de_tour = 0;
-			
-			for(i=0;i<nombre_angles[IDCAPTEUR_HAUT];i++)
-			{
-				angle = (float)(buffer_fronts[IDCAPTEUR_HAUT][i]) / (float)(periode_tour) * 36000;
-				buffer_angles[IDCAPTEUR_HAUT][2*i]   = (unsigned char)((unsigned int)angle >> 8) & 0xFF;
-				buffer_angles[IDCAPTEUR_HAUT][2*i+1] = (unsigned char)((unsigned int)angle     ) & 0xFF;
-			}
-			for(i=0;i<nombre_angles[IDCAPTEUR_BAS];i++)
-			{
-				angle = (float)(buffer_fronts[IDCAPTEUR_BAS][i]) / (float)(periode_tour) * 36000;
-				buffer_angles[IDCAPTEUR_BAS][2*i]   = (unsigned char)((unsigned int)angle >> 8) & 0xFF;
-				buffer_angles[IDCAPTEUR_BAS][2*i+1] = (unsigned char)((unsigned int)angle     ) & 0xFF;
-			}
-
-			trameMiwiTx.message[0] = idbalise;
-			chksum = idbalise;
-			trameMiwiTx.message[1] = IDREQUEST;
-			chksum ^= IDREQUEST;
-
-			trameMiwiTx.message[2] = (periode_tour >> 8) & 0x00FF;
-       		chksum ^= (periode_tour >> 8 ) & 0x00FF;
-			trameMiwiTx.message[3] = periode_tour & 0x00FF;
-			chksum ^= (periode_tour) & 0x00FF;
-			
-			
-			trameMiwiTx.message[4] = nombre_angles[IDCAPTEUR_HAUT];
-			chksum ^= nombre_angles[IDCAPTEUR_HAUT];
-			trameMiwiTx.message[5] = nombre_angles[IDCAPTEUR_BAS];
-			chksum ^= nombre_angles[IDCAPTEUR_BAS];
-       		
-			indiceTabTrameMiwi = 6;
-			
-       		for(i = 0; i < nombre_angles[IDCAPTEUR_HAUT]; i+=2)
-			{
-				trameMiwiTx.message[indiceTabTrameMiwi+i] = buffer_angles[IDCAPTEUR_HAUT][2*i];	//MSB
-				chksum ^= buffer_angles[IDCAPTEUR_HAUT][2*i];
-       			trameMiwiTx.message[indiceTabTrameMiwi+1+i] = buffer_angles[IDCAPTEUR_HAUT][2*i+1]; //LSB
-				chksum ^= buffer_angles[IDCAPTEUR_HAUT][2*i+1];
-			}
-			
-			indiceTabTrameMiwi += nombre_angles[IDCAPTEUR_HAUT]*2;
-			
-			for(i = 0; i < nombre_angles[IDCAPTEUR_BAS]; i+=2)
-			{
-				trameMiwiTx.message[indiceTabTrameMiwi+i] = buffer_angles[IDCAPTEUR_BAS][2*i];	 //MSB
-				chksum ^= buffer_angles[IDCAPTEUR_BAS][2*i];
-       			trameMiwiTx.message[indiceTabTrameMiwi+1+i] = buffer_angles[IDCAPTEUR_BAS][2*i+1]; //LSB
-				chksum ^= buffer_angles[IDCAPTEUR_BAS][2*i+1];				
-			}
-			
-			indiceTabTrameMiwi += nombre_angles[IDCAPTEUR_BAS]*2;
-			trameMiwiTx.message[indiceTabTrameMiwi+1] = chksum ;
-			
-			trameMiwiTx.nbChar = indiceTabTrameMiwi+1;
-			EnvoiMiwi(CARTE_MIWI,BUFFER,trameMiwiTx);
-			indiceTabTrameMiwi = 0;
-		}		
-
-		//--Miwi Reception
-        MiwiTasks(); 
+	    /*******************************************************************/
+	    // Initialize the system
+	    /*******************************************************************/
+	    Initpwm();		// Configuration du module PWM 
+		pwm(BALISE, 0);    
+	    
+		RPINR7bits.IC1R = 10;  // Capteur effet hall
+		RPINR7bits.IC2R = 16;  // Capteur laser 1 (bas)
+		RPINR10bits.IC7R = 17; // Capteur laser 2 (haut)
 		
-        if(MiwiIsDataReady())
-        {
-			trameMiwiRx = MiwiGetData();
-			
-			if(trameMiwiRx.message[0] == idbalise)
+		// Initialize the Input Capture Module
+		IC1CONbits.ICM = 0b00; // Disable Input Capture 1 module
+		IC1CONbits.ICTMR = 1; // Select Timer2 as the IC1 Time base
+		IC1CONbits.ICI = 0b00; // Interrupt on every capture event
+		IC1CONbits.ICM = 0b011; // Generate capture event on every Rising edge
+		// Enable Capture Interrupt And Timer2
+		IPC0bits.IC1IP = 3; // Setup IC1 interrupt priority level
+		IFS0bits.IC1IF = 0; // Clear IC1 Interrupt Status Flag
+		IEC0bits.IC1IE = 1; // Enable IC1 interrupt
+		
+		// Initialize the Input Capture Module
+		IC2CONbits.ICM = 0b00; // Disable Input Capture 1 module
+		IC2CONbits.ICTMR = 1; // Select Timer2 as the IC1 Time base
+		IC2CONbits.ICI = 0b00; // Interrupt on every capture event
+		IC2CONbits.ICM = 0b011; // Generate capture event on every edge // change
+		// Enable Capture Interrupt And Timer2
+		IPC1bits.IC2IP = 2; // Setup IC1 interrupt priority level
+		IFS0bits.IC2IF = 0; // Clear IC1 Interrupt Status Flag
+		IEC0bits.IC2IE = 1; // Enable IC1 interrupt
+		
+		// Initialize the Input Capture Module
+		IC7CONbits.ICM = 0b00; // Disable Input Capture 1 module
+		IC7CONbits.ICTMR = 1; // Select Timer2 as the IC1 Time base
+		IC7CONbits.ICI = 0b00; // Interrupt on every capture event
+		IC7CONbits.ICM = 0b011; // Generate capture event on every edge // change
+		// Enable Capture Interrupt And Timer2
+		IPC5bits.IC7IP = 1; // Setup IC1 interrupt priority level
+		IFS1bits.IC7IF = 0; // Clear IC1 Interrupt Status Flag
+		IEC1bits.IC7IE = 1; // Enable IC1 interrupt
+		
+	
+		// Init ADC
+	
+		AD1CON1bits.FORM   = 0;		// Data Output Format: Integer
+		AD1CON1bits.SSRC   = 7;		// Sample Clock Source: Conversion autostart
+		AD1CON1bits.ASAM   = 1;		// ADC Sample Control: Sampling begins immediately after conversion
+		AD1CON1bits.AD12B  = 1;		// 12-bit ADC operation
+	
+		AD1CON2bits.CSCNA = 1;		// Scan Input Selections for CH0+ during Sample A bit
+		AD1CON2bits.CHPS  = 0;		// Converts CH0
+	
+		AD1CON3bits.ADRC = 0;		// ADC Clock is derived from Systems Clock
+		AD1CON3bits.ADCS = 63;		// ADC Conversion Clock Tad=Tcy*(ADCS+1)= (1/40M)*64 = 1.6us (625Khz)
+									// ADC Conversion Time for 10-bit Tc=12*Tab = 19.2us	
+		
+		AD1CON1bits.ADDMABM = 0; 	// DMA buffers are built in scatter/gather mode
+		AD1CON2bits.SMPI    = (NUM_CHS2SCAN-1);	// 6 ADC Channel is scanned
+		AD1CON4bits.DMABL   = 3;	// Each buffer contains 8 words
+	
+		//AD1CSSH/AD1CSSL: A/D Input Scan Selection Register
+		AD1CSSLbits.CSS0=1;		// Enable AN0 for channel scan
+		AD1CSSLbits.CSS1=1;		// Enable AN1 for channel scan
+		AD1CSSLbits.CSS2=0;		// Enable AN2 for channel scan
+		AD1CSSLbits.CSS3=0;		// Enable AN3 for channel scan
+		AD1CSSLbits.CSS6=0;		// Enable AN6 for channel scan
+		AD1CSSLbits.CSS7=1;		// Enable AN7 for channel scan
+		AD1CSSLbits.CSS8=0;		// Enable AN8 for channel scan
+		
+	 	//AD1PCFGH/AD1PCFGL: Port Configuration Register
+		AD1PCFGL=0xFFFF;
+		AD1PCFGLbits.PCFG0 = 0;	// AN0 as Analog Input
+		AD1PCFGLbits.PCFG1 = 0;	// AN1 as Analog Input
+	 	AD1PCFGLbits.PCFG2 = 1;	// AN2 as Digital Input
+		AD1PCFGLbits.PCFG3 = 1;	// AN3 as Digital Input 
+		AD1PCFGLbits.PCFG6 = 1;	// AN6 as Digital Input
+		AD1PCFGLbits.PCFG7 = 1;	// AN7 as Digital Input
+		AD1PCFGLbits.PCFG8 = 1;	// AN8 as Digital Input 
+		
+		IFS0bits.AD1IF   = 0;		// Clear the A/D interrupt flag bit
+		IEC0bits.AD1IE   = 0;		// Do Not Enable A/D interrupt 
+		AD1CON1bits.ADON = 1;		// Turn on the A/D converter
+	
+		// Init DMA
+	
+		DMA5CONbits.AMODE = 2;			// Configure DMA for Peripheral indirect mode
+		DMA5CONbits.MODE  = 2;			// Configure DMA for Continuous Ping-Pong mode
+		DMA5PAD=(int)&ADC1BUF0;
+		DMA5CNT = (SAMP_BUFF_SIZE*NUM_CHS2SCAN)-1;					
+		DMA5REQ = 13;					// Select ADC1 as DMA Request source
+	
+		DMA5STA = __builtin_dmaoffset(BufferA);		
+		DMA5STB = __builtin_dmaoffset(BufferB);
+	
+		IFS3bits.DMA5IF = 0; //Clear the DMA interrupt flag bit
+		IEC3bits.DMA5IE = 1; //Set the DMA interrupt enable bit
+		
+		DMA5CONbits.CHEN=1;				// Enable DMA
+	
+		
+		// RECBUN : RB2 = 1 RB3 = 0;
+		// RECBEU : RB2 = 0 RB3 = 1;
+		// RECBOI : RB2 = 0 RB3 = 0;
+		
+		idbalise = 0xB3;
+		if(PORTBbits.RB3 == 1)
+			idbalise = 0xB2;	
+		if(PORTBbits.RB2 == 1)
+			idbalise = 0xB1;
+	
+		// Signale sa présence
+		trameMiwiTx.message[0] = idbalise;
+		trameMiwiTx.message[1] = 0xF5;
+		
+		tensionf[0] = ADC_Results[0]*0.322667695;
+		tensionf[1] = ADC_Results[1]*0.322667695;
+	
+		tension[0] = (unsigned int)tensionf[0];
+		tension[1] = (unsigned int)tensionf[1];
+		
+		trameMiwiTx.message[2] = tension[0]>>8;
+		trameMiwiTx.message[3] = tension[0]&0x00FF;
+	     		
+		trameMiwiTx.message[4] = tension[1]>>8;
+		trameMiwiTx.message[5] = tension[1]&0x00FF;
+		
+		MiwiTasks();
+		trameMiwiTx.nbChar = 6;
+		EnvoiMiwi(CARTE_MIWI, BUFFER, trameMiwiTx);
+		//EnvoiDebug(MY_SHORT_ADDRESS >> 8, MY_SHORT_ADDRESS, 10, 12);
+		//EnvoiDebug(PORTBbits.RB3, PORTBbits.RB2, 3, 4);
+		motor_speed = 0;
+		
+		// Init T4 (servo)
+		T4CONbits.TON 	= 0;	//Stops the timer
+		T4CONbits.TSIDL = 0;
+		T4CONbits.TGATE = 0;
+		T4CONbits.TCS	= 0;
+		T4CONbits.T32	= 0;
+		T4CONbits.TCKPS = 0b00;//10; //Prescaler set to 1:64
+		
+		TMR4 = 0; 				//Clear timer register
+		PR4  = 40;				//Full Period = 20.5 µs
+	
+		IPC6bits.T4IP = 7; 		//Set Timer2 Interrupt Priority Level
+		IFS1bits.T4IF = 0; 		//Clear Timer2 Interrupt Flag
+		IEC1bits.T4IE = 1; 		//Enable Timer2 interrupt
+		T4CONbits.TON = 1;		//Timer enabled
+	
+		InitT2();
+
+		while(watchdog<10)
+	    {	
+			if(Fin_de_tour == 1)
 			{
-				if(trameMiwiRx.message[1] == 0x01)
+				Fin_de_tour = 0;
+				
+				for(i=0;i<nombre_angles[IDCAPTEUR_HAUT];i++)
 				{
-					motor_speed = trameMiwiRx.message[2] * 256 + trameMiwiRx.message[3];
-					if(motor_speed == 0)	LASER_ON = 0;
-					else					LASER_ON = 1;
-					pwm(BALISE, trameMiwiRx.message[2] * 256 + trameMiwiRx.message[3]);
-					watchdog=0;
+					angle = (float)(buffer_fronts[IDCAPTEUR_HAUT][i]) / (float)(periode_tour) * 36000;
+					buffer_angles[IDCAPTEUR_HAUT][2*i]   = (unsigned char)((unsigned int)angle >> 8) & 0xFF;
+					buffer_angles[IDCAPTEUR_HAUT][2*i+1] = (unsigned char)((unsigned int)angle     ) & 0xFF;
 				}
-
-				else if(trameMiwiRx.message[1] == IDREQUEST)
+				for(i=0;i<nombre_angles[IDCAPTEUR_BAS];i++)
 				{
-					trameMiwiTx.message[0] = idbalise;
-					trameMiwiTx.message[1] = IDREQUEST; // Answer ID
-										
-					trameMiwiTx.message[2] = nombre_angles[IDCAPTEUR_HAUT];
-	        		trameMiwiTx.message[3] = nombre_angles[IDCAPTEUR_BAS];
-
-					trameMiwiTx.message[4] = (periode_tour >> 8 ) & 0x00FF; // MSB
-	        		trameMiwiTx.message[5] = (periode_tour) & 0x00FF; // LSB
-
-					indiceTabTrameMiwi = 6;
-					
-	        		for(i=0;i<nombre_angles[IDCAPTEUR_HAUT];i+=2)
-					{
-						trameMiwiTx.message[indiceTabTrameMiwi+i]   = buffer_angles[IDCAPTEUR_HAUT][2*i];	//MSB
-						trameMiwiTx.message[indiceTabTrameMiwi+1+i] = buffer_angles[IDCAPTEUR_HAUT][2*i+1]; //LSB
-					}
-					
-					indiceTabTrameMiwi += nombre_angles[IDCAPTEUR_HAUT]*2;
-					
-					for(i=0;i<nombre_angles[IDCAPTEUR_BAS];i+=2)
-					{
-						trameMiwiTx.message[indiceTabTrameMiwi+i]   = buffer_angles[IDCAPTEUR_BAS][2*i];	 //MSB
-						trameMiwiTx.message[indiceTabTrameMiwi+1+i] = buffer_angles[IDCAPTEUR_BAS][2*i+1]; 	 //LSB
-					}
-					
-					indiceTabTrameMiwi += nombre_angles[IDCAPTEUR_BAS]*2;
-					
-					trameMiwiTx.nbChar = indiceTabTrameMiwi;					
-					EnvoiMiwi(CARTE_MIWI,BUFFER,trameMiwiTx);
-					indiceTabTrameMiwi = 0;
-					
+					angle = (float)(buffer_fronts[IDCAPTEUR_BAS][i]) / (float)(periode_tour) * 36000;
+					buffer_angles[IDCAPTEUR_BAS][2*i]   = (unsigned char)((unsigned int)angle >> 8) & 0xFF;
+					buffer_angles[IDCAPTEUR_BAS][2*i+1] = (unsigned char)((unsigned int)angle     ) & 0xFF;
 				}
-				else if(trameMiwiRx.message[1] == 0x10)
+	
+				trameMiwiTx.message[0] = idbalise;
+				trameMiwiTx.message[1] = IDREQUEST;
+	
+				trameMiwiTx.message[2] = (periode_tour >> 8) & 0x00FF;
+				trameMiwiTx.message[3] = periode_tour & 0x00FF;
+				
+				
+				trameMiwiTx.message[4] = nombre_angles[IDCAPTEUR_HAUT];
+				trameMiwiTx.message[5] = nombre_angles[IDCAPTEUR_BAS];
+	       		
+				indiceTabTrameMiwi = 6;
+				
+	       		for(i = 0; i < nombre_angles[IDCAPTEUR_HAUT]; i+=2)
 				{
-					Periode_Servo1 = trameMiwiRx.message[2] * 256 + trameMiwiRx.message[3];
-					if(Periode_Servo1 == 0) SERVO_ON = 0;
-					else					SERVO_ON = 1;
-				}
-				else if(trameMiwiRx.message[1] == 0x11)
-				{
-					Periode_Servo2 = trameMiwiRx.message[2] * 256 + trameMiwiRx.message[3];
-					if(Periode_Servo2 == 0) SERVO_ON = 0;
-					else					SERVO_ON = 1;
+					trameMiwiTx.message[indiceTabTrameMiwi+i] = buffer_angles[IDCAPTEUR_HAUT][2*i];	//MSB
+	       			trameMiwiTx.message[indiceTabTrameMiwi+1+i] = buffer_angles[IDCAPTEUR_HAUT][2*i+1]; //LSB
 				}
 				
-				else if(trameMiwiRx.message[1] == 0xF0)
+				indiceTabTrameMiwi += nombre_angles[IDCAPTEUR_HAUT]*2;
+				
+				for(i = 0; i < nombre_angles[IDCAPTEUR_BAS]; i+=2)
 				{
-					testConn  = 1;
+					trameMiwiTx.message[indiceTabTrameMiwi+i] = buffer_angles[IDCAPTEUR_BAS][2*i];	 //MSB
+	       			trameMiwiTx.message[indiceTabTrameMiwi+1+i] = buffer_angles[IDCAPTEUR_BAS][2*i+1]; //LSB
 				}
-				else if(trameMiwiRx.message[1] == 0xF1) // RESET
-				{
-					Reset();
-				}
-				else if(trameMiwiRx.message[1] == 0xEE) // RESET
-				{
-					FonctionDebug(trameMiwiRx.message[2]);
-				}
-			}
-        }
-		else if(testConn)
-		{
-			testConn = 0;
+				
+				indiceTabTrameMiwi += nombre_angles[IDCAPTEUR_BAS]*2;
+				
+				trameMiwiTx.nbChar = indiceTabTrameMiwi;
+				EnvoiMiwi(CARTE_MIWI,BUFFER,trameMiwiTx);
+				indiceTabTrameMiwi = 0;
+			}		
+	
+			//--Miwi Reception
+	        MiwiTasks(); 
 			
-			trameMiwiTx.message[0] = idbalise;
-			trameMiwiTx.message[1] = 0xF5;
-
-			tensionf[0] = ADC_Results[0]*0.322667695;
-			tensionf[1] = ADC_Results[1]*0.322667695;
-
-			tension[0] = (unsigned int)tensionf[0];
-			tension[1] = (unsigned int)tensionf[1];
-
-			trameMiwiTx.message[2] = tension[0]>>8;
-			trameMiwiTx.message[3] = tension[0]&0x00FF;
-
-			trameMiwiTx.message[4] = tension[1]>>8;
-			trameMiwiTx.message[5] = tension[1]&0x00FF;
-
-			trameMiwiTx.nbChar = 6;
-			EnvoiMiwi(CARTE_MIWI,BUFFER,trameMiwiTx);
-		}
-    }//while(watchdog)
+	        if(MiwiIsDataReady())
+	        {
+				trameMiwiRx = MiwiGetData();
+				
+				if(trameMiwiRx.message[0] == idbalise)
+				{
+					if(trameMiwiRx.message[1] == 0x01)
+					{
+						motor_speed = trameMiwiRx.message[2] * 256 + trameMiwiRx.message[3];
+						if(motor_speed == 0)	LASER_ON = 0;
+						else					LASER_ON = 1;
+						pwm(BALISE, trameMiwiRx.message[2] * 256 + trameMiwiRx.message[3]);
+						watchdog=0;
+					}
+					else if(trameMiwiRx.message[1] == 0x10)
+					{
+						Periode_Servo1 = trameMiwiRx.message[2] * 256 + trameMiwiRx.message[3];
+						if(Periode_Servo1 == 0) SERVO_ON = 0;
+						else					SERVO_ON = 1;
+					}
+					else if(trameMiwiRx.message[1] == 0x11)
+					{
+						Periode_Servo2 = trameMiwiRx.message[2] * 256 + trameMiwiRx.message[3];
+						if(Periode_Servo2 == 0) SERVO_ON = 0;
+						else					SERVO_ON = 1;
+					}
+					else if(trameMiwiRx.message[1] == 0xF0)
+					{
+						testConn  = 1;
+					}
+					else if(trameMiwiRx.message[1] == 0xF1) // RESET
+					{
+						Reset();
+					}
+					else if(trameMiwiRx.message[1] == 0xEE) // RESET
+					{
+						FonctionDebug(trameMiwiRx.message[2]);
+					}
+				}
+	        }
+			else if(testConn)
+			{
+				testConn = 0;
+				
+				trameMiwiTx.message[0] = idbalise;
+				trameMiwiTx.message[1] = 0xF5;
+	
+				tensionf[0] = ADC_Results[0]*0.322667695;
+				tensionf[1] = ADC_Results[1]*0.322667695;
+	
+				tension[0] = (unsigned int)tensionf[0];
+				tension[1] = (unsigned int)tensionf[1];
+	
+				trameMiwiTx.message[2] = tension[0]>>8;
+				trameMiwiTx.message[3] = tension[0]&0x00FF;
+	
+				trameMiwiTx.message[4] = tension[1]>>8;
+				trameMiwiTx.message[5] = tension[1]&0x00FF;
+	
+				trameMiwiTx.nbChar = 6;
+				EnvoiMiwi(CARTE_MIWI,BUFFER,trameMiwiTx);
+			}
+	    }//while(watchdog)
 	}//while(1)
 }
 
