@@ -14,6 +14,9 @@ ACK Buffer
 *************************/
 #include "UserAckMiwi.h"
 
+// Mon address
+int address;
+
 //Indice du message bloquant 10 ou 11 pour l'envoi
 unsigned char indiceBloquantAlt[NB_CANAUX];
 
@@ -77,13 +80,19 @@ static BYTE messageATraiter[TAILLE_MAX_TRAME];
 //Gestion canal
 static BYTE canaux[NB_CANAUX];
 
-void InitAckMiwi(void)
+int MyAddress()
+{
+	return address;
+}
+
+void InitAckMiwi(int adr)
 {
 	int iCanal = 0;
 	int iBuffer = 0;
 	InitAckBuffer();
 	InitAckBloquant();
 	InitTimer5();
+	address = adr;
 	
 	trameATraiter.message = messageATraiter;		
 	
@@ -134,7 +143,7 @@ void InitTimer5(void)
 	TMR5 = 0; 				//Clear timer register
 	PR5  = TIMER_PR_VALUE;  //Load the period value (Pas) 1/(4e6/8/500) = 1ms
 
-	IPC7bits.T5IP = 7; 		//Set Timer5 Interrupt Priority Level
+	IPC7bits.T5IP = 4; 		//Set Timer5 Interrupt Priority Level
 	IFS1bits.T5IF = 0; 		//Clear Timer5 Interrupt Flag
 	IEC1bits.T5IE = 1; 		//Enable Timer5 interrupt
 }
@@ -160,7 +169,7 @@ void EnvoiMiwi(char destinataire, char bloquant, Trame trame)
 			trameBuffer[indiceCanal].message[i+2] = trame.message[i];
 		}
 		trameBuffer[indiceCanal].message[0] = indiceBufferAlt[indiceCanal];
-		trameBuffer[indiceCanal].message[1] = MY_SHORT_ADDRESS;
+		trameBuffer[indiceCanal].message[1] = MyAddress();
 		trameBuffer[indiceCanal].nbChar = trame.nbChar + 2;
 		
 		destinataireBuffer[indiceCanal] = destinataire;
@@ -181,7 +190,7 @@ void EnvoiMiwi(char destinataire, char bloquant, Trame trame)
 			trameBloquant[indiceCanal][indiceLibreBloquant[indiceCanal]].message[i+2] = trame.message[i];
 		}
 		trameBloquant[indiceCanal][indiceLibreBloquant[indiceCanal]].message[0] = indiceBloquantAlt[indiceCanal];
-		trameBloquant[indiceCanal][indiceLibreBloquant[indiceCanal]].message[1] = MY_SHORT_ADDRESS;
+		trameBloquant[indiceCanal][indiceLibreBloquant[indiceCanal]].message[1] = MyAddress();
 		trameBloquant[indiceCanal][indiceLibreBloquant[indiceCanal]].nbChar = trame.nbChar + 2;
 		
 		destinataireBloquant[indiceCanal][indiceLibreBloquant[indiceCanal]] = destinataire;
@@ -275,7 +284,7 @@ void ReceptionMiwi(char expediteur, Trame trame)
 	{	
 		LED = !ETAT_LED;
 
-		EnvoiAck(expediteur, trameAckBloquant);
+		EnvoiAck(expediteur, MyAddress(), trameAckBloquant);
 		indiceBloquantAltRecu = trame.message[0];
 		
 		if(indiceBloquantAltRecu != previousIndiceBloquantAltRecu[indiceCanal])	
@@ -297,7 +306,7 @@ void ReceptionMiwi(char expediteur, Trame trame)
 	{
 		LED = !ETAT_LED;
 
-		EnvoiAck(expediteur, trameAckBuffer);
+		EnvoiAck(expediteur, MyAddress(), trameAckBuffer);
 		indiceBufferAltRecu = trame.message[0];
 		
 		if(indiceBufferAltRecu != previousIndiceBufferAltRecu[indiceCanal])	

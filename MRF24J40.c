@@ -7,6 +7,7 @@
 
 #include <string.h>			// memset()
 #include "MRF24J40.h"
+#include "init.h"
 
 #include <p33FJ128MC804.h>
 
@@ -243,14 +244,14 @@ UINT8 initMRF24J40(void)
 }
 
 // on return, 1=radio is setup, 0=there is no radio
-BOOL RadioInit(void)					// cold start radio init
+BOOL RadioInit(int address)					// cold start radio init
 {
 	BOOL radio;
 
 	memset((void*)&RadioStatus, 0, sizeof(RadioStatus));
-	
+
 	RadioStatus.MyPANID 		= MY_PAN_ID;
-	RadioStatus.MyShortAddress 	= MY_SHORT_ADDRESS;
+	RadioStatus.MyShortAddress 	= address;
 	RadioStatus.MyLongAddress  	= MY_LONG_ADDRESS;
 
 	RadioStatus.Channel = 11;			// start at channel 11

@@ -39,10 +39,11 @@
 void MiwiTasks(void);
 
 void InitTimer5(void);
-void InitAckMiwi(void);
+void InitAckMiwi(int address);
 void InitAckBuffer(void);
 void InitAckBloquant(void);
 
+int MyAddress();
 char VerifChecksum(Trame trame);
 void ReceptionMiwi(char expediteur,Trame trame);
 void ReceptionAck(char expediteur,char bloquant);
@@ -53,6 +54,5 @@ Trame MiwiGetData(void);
 char MiwiIsDataReady(void);
 
 unsigned char CanalAttribution(unsigned char indentifiant);
-
 
 #endif

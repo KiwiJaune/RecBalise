@@ -99,10 +99,9 @@ void Initpwm(void)
 
 void InitT2(void)
 {
-	T2CONbits.TCKPS = 3;	// 1:256 Prescaler
+	T2CONbits.TCKPS = 2;	// 1:64 Prescaler
 	PR2 = 0xFFFF;			// Time to autoreload
 	IFS0bits.T2IF = 0;		// Interrupt flag cleared
 	IEC0bits.T2IE = 0;		// Interrupt disabled
 	T2CONbits.TON = 1;		// Timer enabled
 }
-
