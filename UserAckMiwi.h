@@ -12,6 +12,8 @@
 #define DOWN 0
 
 #define BUFFER 0
+#define BUFFER_A 0x20
+#define BUFFER_B 0x21
 #define ACK_BUFFER 0x02
 
 #define BLOQUANT 1
