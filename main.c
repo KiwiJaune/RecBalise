@@ -186,7 +186,7 @@ int main(void)
 		IC1CONbits.ICM = 0b00; // Disable Input Capture 1 module
 		IC1CONbits.ICTMR = 1; // Select Timer2 as the IC1 Time base
 		IC1CONbits.ICI = 0b00; // Interrupt on every capture event
-		IC1CONbits.ICM = 0b011; // Generate capture event on every Rising edge
+		IC1CONbits.ICM = 0b010; // Generate capture event on every Falling edge
 		// Enable Capture Interrupt And Timer2
 		IPC0bits.IC1IP = 5; // Setup IC1 interrupt priority level
 		IFS0bits.IC1IF = 0; // Clear IC1 Interrupt Status Flag
@@ -196,7 +196,7 @@ int main(void)
 		IC2CONbits.ICM = 0b00; // Disable Input Capture 1 module
 		IC2CONbits.ICTMR = 1; // Select Timer2 as the IC1 Time base
 		IC2CONbits.ICI = 0b00; // Interrupt on every capture event
-		IC2CONbits.ICM = 0b011; // Generate capture event on every edge // change
+		IC2CONbits.ICM = 0b011; // Generate capture event on every Rising edge
 		// Enable Capture Interrupt And Timer2
 		IPC1bits.IC2IP = 6; // Setup IC1 interrupt priority level
 		IFS0bits.IC2IF = 0; // Clear IC1 Interrupt Status Flag
@@ -206,7 +206,7 @@ int main(void)
 		IC7CONbits.ICM = 0b00; // Disable Input Capture 1 module
 		IC7CONbits.ICTMR = 1; // Select Timer2 as the IC1 Time base
 		IC7CONbits.ICI = 0b00; // Interrupt on every capture event
-		IC7CONbits.ICM = 0b011; // Generate capture event on every edge // change
+		IC7CONbits.ICM = 0b011; // Generate capture event on every Rising edge
 		// Enable Capture Interrupt And Timer2
 		IPC5bits.IC7IP = 6; // Setup IC1 interrupt priority level
 		IFS1bits.IC7IF = 0; // Clear IC1 Interrupt Status Flag
