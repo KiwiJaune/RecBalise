@@ -40,7 +40,7 @@ unsigned int  BufferB[MAX_CHNUM+1][SAMP_BUFF_SIZE] __attribute__((space(dma),ali
 unsigned int ADC_Results[8],DmaBuffer = 0,tension[2];
 float tensionf[2];
 
-unsigned char watchdog=0;
+unsigned char watchdog=0,Reset_soft=0;
 unsigned int periode_tour;
 char Fin_de_tour = 0;
 char capteurHautPrec = 0;
@@ -54,8 +54,10 @@ unsigned int buffer_fronts_temp[2][8]; // Valeurs bruts TMR2
 unsigned int ptr_fronts_bas; // ptr pour l'enregistrement
 unsigned int ptr_fronts_haut; // 
 unsigned int hall_front;
-unsigned int motor_speed;
+unsigned int motor_speed,Cpt_20ms=0;
 float angle;
+
+unsigned char Com_started=0;
 
 unsigned char idbalise;
 
@@ -294,6 +296,7 @@ int main(void)
 		MiwiTasks();
 		trameMiwiTx.nbChar = 6;
 		EnvoiMiwi(CARTE_MIWI, BUFFER, trameMiwiTx);
+		
 		//EnvoiDebug(MY_SHORT_ADDRESS >> 8, MY_SHORT_ADDRESS, 10, 12);
 		//EnvoiDebug(PORTBbits.RB3, PORTBbits.RB2, 3, 4);
 		motor_speed = 0;
@@ -316,8 +319,13 @@ int main(void)
 	
 		InitT2();
 
-		while(watchdog<10)
+		while(1)
 	    {	
+			if(Reset_soft)
+			{
+				//Init Miwi
+				InitMiwi(idbalise);
+			}
 			if(Fin_de_tour == 1)
 			{
 				Fin_de_tour = 0;
@@ -377,6 +385,7 @@ int main(void)
 				
 				if(trameMiwiRx.message[0] == idbalise)
 				{
+					Com_started=1;
 					if(trameMiwiRx.message[1] == 0x01)
 					{
 						motor_speed = trameMiwiRx.message[2] * 256 + trameMiwiRx.message[3];
@@ -432,6 +441,7 @@ int main(void)
 	
 				trameMiwiTx.nbChar = 6;
 				EnvoiMiwi(CARTE_MIWI,BUFFER,trameMiwiTx);
+				Cpt_20ms=0;
 			}
 	    }//while(watchdog)
 	}//while(1)
@@ -439,8 +449,10 @@ int main(void)
 
 char pwm(unsigned char motor, float value) // Value = +/- 4000
 {
-	if(value >  4095) value =  4095;
-	if(value < -4095) value = -4095;
+	value = value/10;	
+	if(value >  400) value =  400;
+	if(value < -400) value = -400;
+	
 	
 	/*if(value >  2000) value =  2000; // config de test, faible puissance
 	if(value < -2000) value = -2000;*/
@@ -453,12 +465,12 @@ char pwm(unsigned char motor, float value) // Value = +/- 4000
 				if(value > 0)	// Moteur Balise
 				{
 					//DIRB  = 1;		// Position incremente
-					P1DC1 = (unsigned int)(4095- value);		
+					P1DC1 = (unsigned int)(400- value);		
 				}
 				else
 				{
 					//DIRB  = 0;		// Position decremente
-					P1DC1 = (unsigned int)(4095 + value); // 15/04/2012		
+					P1DC1 = (unsigned int)(400 + value); // 15/04/2012		
 				}
 				break;
 		default : return -1;
@@ -477,6 +489,8 @@ void __attribute__((interrupt, no_auto_psv)) _IC1Interrupt(void)
 	IFS0bits.IC1IF=0;
 	LASER_ON=1;
 
+	
+
 	nombre_angles[IDCAPTEUR_HAUT] = ptr_fronts_haut;
 	nombre_angles[IDCAPTEUR_BAS] = ptr_fronts_bas;
 
@@ -491,8 +505,8 @@ void __attribute__((interrupt, no_auto_psv)) _IC1Interrupt(void)
 	
 	ptr_fronts_haut=0;
 	ptr_fronts_bas=0;
-	//if(watchdog++>30) Reset(); // protection ultime en cas de miwi + boucle principale bloquée
 	Fin_de_tour=1;
+	
 }
 
 void __attribute__((interrupt, no_auto_psv)) _IC2Interrupt(void)
@@ -579,6 +593,8 @@ void __attribute__((__interrupt__,__auto_psv__)) _T4Interrupt(void)
 	}
 	if(Cpt_Tmr_Periode == 2000) // 20 ms periode
 	{
+		if(++Cpt_20ms>150 && Com_started==1)	Reset_soft=1; // watchdog 3s
+		
 		SIGNAL_SERVO1 = RISING_EDGE;
 		SIGNAL_SERVO2 = RISING_EDGE;
 		Cpt_Tmr_Periode = 0;

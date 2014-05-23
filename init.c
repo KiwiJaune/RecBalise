@@ -90,7 +90,7 @@ void Init(void)
 void Initpwm(void)
 {
 	P1TCONbits.PTEN = 1; 		// PWM Time base is On
-	P1TPER = 2000 - 1; 			// 20kHz PWM (2000 counts @40MIPS)
+	P1TPER = 200 - 1; 			// 20kHz PWM (2000 counts @40MIPS)
 	PWM1CON1bits.PEN1L = 1;		// PWM1L1 pin is enabled for PWM output 
 
 	P1DC1 = 0xFFFF;
